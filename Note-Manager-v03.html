@@ -1736,7 +1736,7 @@ function renderToolbar(){
     if(cmd){const st=key==="bold"?' style="font-weight:700"':key==="italic"?' style="font-style:italic"':key==="underline"?' style="text-decoration:underline"':key==="strike"?' style="text-decoration:line-through"':'';html+='<button class="tool-btn"'+mn+' onclick="execCmd(\''+cmd+'\')"'+st+'>'+label+'</button>';}
   });
   // NEW: inline note link button (⛓️⛓️)
-    html+="<button class='tool-btn' onclick='insertNoteLinkInline()' title='Insert Note Link'>⛓️⛓️</button>"; title="Insert Note Link">⛓️⛓️</button>';
+  html+="<button class='tool-btn' onclick='insertNoteLinkInline()'>Link</button>";
   return html;
 }
 
