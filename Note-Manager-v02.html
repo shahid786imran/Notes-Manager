@@ -2127,7 +2127,7 @@ function settingCard(key,section,label,type,dbKey,min,max,step){
   if(type==="slider"){control='<input type="range" min="'+min+'" max="'+max+'" step="'+(step||1)+'" value="'+v+'" oninput="this.nextElementSibling.textContent=this.value; saveSetting(\''+dbKey+'\',Number(this.value));" onclick="event.stopPropagation();"><div class="range-val">'+v+'</div>';}
   else if(type==="toggle"){control='<button class="dropdown-float-select" type="button" onclick="event.stopPropagation(); openFloatingDropdown(event,\''+dbKey+'\',[{value:\'true\',label:\'On\'},{value:\'false\',label:\'Off\'}],\''+(v?"true":"false")+'\')"><span>'+(v?"On":"Off")+'</span></button>';}
   else if(type==="viewmode"){control='<button class="dropdown-float-select" type="button" onclick="event.stopPropagation(); openFloatingDropdown(event,\'noteListView\',[{value:\'compact\',label:\'Compact\'},{value:\'normal\',label:\'Normal\'},{value:\'expanded\',label:\'Expanded\'},{value:\'grid\',label:\'Grid\'}],\''+escapeAttribute(v)+'\')"><span>'+escapeHtml(v)+'</span></button>';}
-  else if(type==="autodel"){control='<button class="dropdown-float-select" type="button" onclick="event.stopPropagation(); openFloatingDropdown(event,\''+dbKey+'\','+JSON.stringify(AUTO_DELETE_OPTIONS.map(o=>({value:String(o.value),label:o.label})))+',\''+String(v)+'\')"><span>'+escapeHtml((AUTO_DELETE_OPTIONS.find(o=>o.value===Number(v))||{}).label||"")+'</span></button>';}
+  else if(type==="autodel"){const _ao=JSON.stringify(AUTO_DELETE_OPTIONS.map(o=>({value:String(o.value),label:o.label}))).replace(/"/g,"&quot;");control='<button class="dropdown-float-select" type="button" onclick="event.stopPropagation(); openFloatingDropdown(event,\''+dbKey+'\','+_ao+',\''+String(v)+'\')"><span>'+escapeHtml((AUTO_DELETE_OPTIONS.find(o=>o.value===Number(v))||{}).label||"")+'</span></button>';}
   else if(type==="dropdown"){
     let opts=[];
     if(dbKey==="theme")opts=["Day","Night","System","Sepia"];
@@ -2142,7 +2142,7 @@ function settingCard(key,section,label,type,dbKey,min,max,step){
     else if(dbKey==="sidebarFont"||dbKey==="rightSidebarFont")opts=FONT_LIST;
     else if(dbKey==="borderRadius")opts=["4","8","12","16"];
     else if(dbKey==="animationSpeed")opts=["Off","Fast","Normal","Slow"];
-    if(opts.length)control='<button class="dropdown-float-select" type="button" onclick="event.stopPropagation(); openFloatingDropdown(event,\''+dbKey+'\','+JSON.stringify(opts.map(o=>({value:String(o),label:String(o)})))+',\''+escapeAttribute(String(v))+'\')"><span>'+escapeHtml(String(v||"—"))+'</span></button>';
+    if(opts.length){const _oj=JSON.stringify(opts.map(o=>({value:String(o),label:String(o)}))).replace(/"/g,"&quot;");control='<button class="dropdown-float-select" type="button" onclick="event.stopPropagation(); openFloatingDropdown(event,\''+dbKey+'\','+_oj+',\''+escapeAttribute(String(v))+'\')"><span>'+escapeHtml(String(v||"—"))+'</span></button>';}
     else control='<input type="text" value="'+escapeAttribute(v||"")+'" onchange="saveSetting(\''+dbKey+'\',this.value)" onclick="event.stopPropagation();">';
   }
   else if(type==="color"){control='<button class="small-action-btn" onclick="event.stopPropagation(); pickColorSetting(\''+dbKey+'\',\''+escapeAttribute(label)+'\')">🎨 Change</button>';}
