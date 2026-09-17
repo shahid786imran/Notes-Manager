@@ -1818,7 +1818,6 @@ function saveFullscreenEdit(){const id=fullscreenNoteId;if(!id)return;const n=ge
 function cancelFullscreenEdit(){closeFullscreen();}
 function printNote(id){const n=getNote(id);if(!n)return;const w=window.open("","_blank");w.document.write('<html><head><title>'+escapeHtml(n.title)+'</title><style>body{font-family:Arial;max-width:800px;margin:auto;padding:20px;}h1{border-bottom:2px solid #000;padding-bottom:8px;}</style></head><body><h1>'+escapeHtml(n.title)+'</h1>'+(n.content||"")+'</body></html>');w.document.close();w.focus();setTimeout(()=>w.print(),250);}
 function exportSingleNote(id){const n=getNote(id);if(!n)return;const json=JSON.stringify(n,null,2);const blob=new Blob([json],{type:"application/json"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=n.title.replace(/[^a-z0-9]/gi,"_")+".json";a.click();URL.revokeObjectURL(url);showToast("Note exported","success");}
-<script>
 // ============================================================
 // SIDEBAR / CATEGORIES / TAGS / LINKS / CUSTOM ITEMS
 // ============================================================
