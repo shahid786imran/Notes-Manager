@@ -641,7 +641,7 @@ var editItemIcon="",editCardIcon="",currentNoteColor="",currentTagColor="blue",c
 var dragState={active:false,type:null,id:null,cardId:null,timer:null};
 var currentFilter="all",currentFilterLabel="";
 var multiSelect={active:false,type:null,ids:new Set()};
-var recentItems=[],customTags=[],longPressTimer=null,longPressFired=false;
+var recentItems=[],customTags=[],longPressTimer=null,longPressFired=false,lastTouchEnd=0;
 
 var settings={themeMode:localStorage.getItem("nm_themeMode")||"light",confirmDialogs:localStorage.getItem("nm_confirm")!=="false",autopin:localStorage.getItem("nm_autopin")==="true",toastDuration:localStorage.getItem("nm_toast")||"normal",toastPos:localStorage.getItem("nm_toastPos")||"bottom",fontFamily:localStorage.getItem("nm_fontFamily")||"jakarta",cardStyle:localStorage.getItem("nm_cardStyle")||"glass",animSpeed:localStorage.getItem("nm_animSpeed")||"normal",showCounts:localStorage.getItem("nm_counts")!=="false",showTimestamps:localStorage.getItem("nm_timestamps")==="true",compactHeader:localStorage.getItem("nm_compactHeader")==="true",showRecent:localStorage.getItem("nm_recent")!=="false",homeMode:localStorage.getItem("nm_home")||"sync",fabIcon:localStorage.getItem("nm_fabIcon")||"🏠",fabSize:localStorage.getItem("nm_fabSize")||"62",dblTapSpeed:localStorage.getItem("nm_dblTap")||"250",tripleTap:localStorage.getItem("nm_triple")||"settings",longPress:localStorage.getItem("nm_longPress")||"filter",swipeUp:localStorage.getItem("nm_swipeUp")||"quickadd",swipeDown:localStorage.getItem("nm_swipeDown")||"hide",dragPos:localStorage.getItem("nm_dragPos")==="true",multiTap:localStorage.getItem("nm_multiTap")!=="false",ripple:localStorage.getItem("nm_ripple")!=="false",shimmer:localStorage.getItem("nm_shimmer")!=="false",gradientFx:localStorage.getItem("nm_gradientFx")!=="false",vibrate:localStorage.getItem("nm_vibrate")!=="false",scrollAware:localStorage.getItem("nm_scrollAware")!=="false",dotBadge:localStorage.getItem("nm_dotBadge")==="true",layout:localStorage.getItem("nm_layout")||"list"};
 var toastTimes={short:1000,normal:1500,long:3000};
@@ -1107,7 +1107,8 @@ fab.addEventListener("touchend",function(e){
   if(longPressFired){longPressFired=false;fabTouch.active=false;return}
   var dx=fabTouch.dx,dy=fabTouch.dy;
   fabTouch.active=false;
-  if(fabTouch.isDragging){var left=parseFloat(fab.style.left);try{localStorage.setItem("nm_fabX",left)}catch(e){}return}
+lastTouchEnd=Date.now();
+if(fabTouch.isDragging){var left=parseFloat(fab.style.left);try{localStorage.setItem("nm_fabX",left)}catch(e){}return}
   if(Math.abs(dx)>60||Math.abs(dy)>60){
     if(dy<-50&&Math.abs(dy)>Math.abs(dx)){
       var a=settings.swipeUp;
@@ -1124,6 +1125,7 @@ fab.addEventListener("touchend",function(e){
 },{passive:true});
 
 fab.addEventListener("mousedown",function(e){
+  if(Date.now()-lastTouchEnd<500)return;
   fabTouch={x0:e.clientX,y0:e.clientY,dx:0,dy:0,active:true,isDragging:false};
   longPressFired=false;
   if(settings.longPress==="filter"||settings.longPress==="context"){
@@ -1138,6 +1140,7 @@ fab.addEventListener("mousedown",function(e){
   }
 });
 fab.addEventListener("mouseup",function(e){
+  if(Date.now()-lastTouchEnd<500)return;
   if(!fabTouch.active)return;
   if(longPressTimer){clearTimeout(longPressTimer);longPressTimer=null}
   if(longPressFired){longPressFired=false;fabTouch.active=false;return}
