@@ -383,7 +383,7 @@ body.night .fd input,body.night .fd textarea{background:rgba(255,255,255,.06)}
 
 <div id="cards"></div>
 
-<button class="fab" id="fab" onclick="fabTap(event)"><span class="ico" id="fabIcon">🏠</span><span class="filter-label" id="fabFilterLabel"></span><span class="dot" id="fabDot"></span></button>
+<button class="fab" id="fab"><span class="ico" id="fabIcon">🏠</span><span class="filter-label" id="fabFilterLabel"></span><span class="dot" id="fabDot"></span></button>
 
 <div class="sheet-ov" id="sheetOv" onclick="closeSheet(event)">
   <div class="sheet" onclick="event.stopPropagation()">
@@ -643,7 +643,7 @@ var editItemIcon="",editCardIcon="",currentNoteColor="",currentTagColor="blue",c
 var dragState={active:false,type:null,id:null,cardId:null,timer:null};
 var currentFilter="all",currentFilterLabel="";
 var multiSelect={active:false,type:null,ids:new Set()};
-var recentItems=[],customTags=[],longPressTimer=null;
+var recentItems=[],customTags=[],longPressTimer=null,longPressFired=false;
 
 var settings={themeMode:localStorage.getItem("nm_themeMode")||"light",confirmDialogs:localStorage.getItem("nm_confirm")!=="false",autopin:localStorage.getItem("nm_autopin")==="true",toastDuration:localStorage.getItem("nm_toast")||"normal",toastPos:localStorage.getItem("nm_toastPos")||"bottom",fontFamily:localStorage.getItem("nm_fontFamily")||"jakarta",cardStyle:localStorage.getItem("nm_cardStyle")||"glass",animSpeed:localStorage.getItem("nm_animSpeed")||"normal",showCounts:localStorage.getItem("nm_counts")!=="false",showTimestamps:localStorage.getItem("nm_timestamps")==="true",compactHeader:localStorage.getItem("nm_compactHeader")==="true",showRecent:localStorage.getItem("nm_recent")!=="false",homeMode:localStorage.getItem("nm_home")||"sync",fabIcon:localStorage.getItem("nm_fabIcon")||"🏠",fabSize:localStorage.getItem("nm_fabSize")||"62",dblTapSpeed:localStorage.getItem("nm_dblTap")||"250",tripleTap:localStorage.getItem("nm_triple")||"settings",longPress:localStorage.getItem("nm_longPress")||"filter",swipeUp:localStorage.getItem("nm_swipeUp")||"quickadd",swipeDown:localStorage.getItem("nm_swipeDown")||"hide",dragPos:localStorage.getItem("nm_dragPos")==="true",multiTap:localStorage.getItem("nm_multiTap")!=="false",ripple:localStorage.getItem("nm_ripple")!=="false",shimmer:localStorage.getItem("nm_shimmer")!=="false",gradientFx:localStorage.getItem("nm_gradientFx")!=="false",vibrate:localStorage.getItem("nm_vibrate")!=="false",scrollAware:localStorage.getItem("nm_scrollAware")!=="false",dotBadge:localStorage.getItem("nm_dotBadge")==="true",layout:localStorage.getItem("nm_layout")||"list"};
 var toastTimes={short:1000,normal:1500,long:3000};
@@ -1000,10 +1000,12 @@ var fab=$("fab");
 fab.addEventListener("touchstart",function(e){
   var t=e.touches[0];
   fabTouch={x0:t.clientX,y0:t.clientY,dx:0,dy:0,active:true,isDragging:false};
+  longPressFired=false;
   if(settings.longPress==="filter"||settings.longPress==="context"){
     clearTimeout(longPressTimer);
     longPressTimer=setTimeout(function(){
       longPressTimer=null;
+      longPressFired=true;
       haptic(30);
       if(settings.longPress==="filter")openFilterSheet();
       else openSheet();
@@ -1031,6 +1033,7 @@ fab.addEventListener("touchmove",function(e){
 fab.addEventListener("touchend",function(e){
   if(!fabTouch.active)return;
   if(longPressTimer){clearTimeout(longPressTimer);longPressTimer=null;fabTouch.active=false;return}
+  if(longPressFired){longPressFired=false;fabTouch.active=false;return}
   var dx=fabTouch.dx,dy=fabTouch.dy;
   fabTouch.active=false;
   if(fabTouch.isDragging){var left=parseFloat(fab.style.left);try{localStorage.setItem("nm_fabX",left)}catch(e){}return}
@@ -1051,20 +1054,22 @@ fab.addEventListener("touchend",function(e){
 
 fab.addEventListener("mousedown",function(e){
   fabTouch={x0:e.clientX,y0:e.clientY,dx:0,dy:0,active:true,isDragging:false};
+  longPressFired=false;
   if(settings.longPress==="filter"||settings.longPress==="context"){
     clearTimeout(longPressTimer);
     longPressTimer=setTimeout(function(){
       longPressTimer=null;
+      longPressFired=true;
       haptic(30);
       if(settings.longPress==="filter")openFilterSheet();
       else openSheet();
     },500);
   }
 });
-
 fab.addEventListener("mouseup",function(e){
   if(!fabTouch.active)return;
   if(longPressTimer){clearTimeout(longPressTimer);longPressTimer=null;fabTouch.active=false;return}
+  if(longPressFired){longPressFired=false;fabTouch.active=false;return}
   var dx=e.clientX-fabTouch.x0,dy=e.clientY-fabTouch.y0;
   fabTouch.active=false;
   if(Math.abs(dx)>10||Math.abs(dy)>10)return;
