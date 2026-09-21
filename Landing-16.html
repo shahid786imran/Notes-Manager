@@ -730,7 +730,30 @@ function fabHome(){if(settings.homeMode==="sync"&&typeof window.syncFromFirebase
 
 function createRipple(e){if(!settings.ripple)return;var fabEl=$("fab"),r=document.createElement("span");r.className="ripple";var rect=fabEl.getBoundingClientRect();var size=Math.max(rect.width,rect.height);r.style.width=size+"px";r.style.height=size+"px";r.style.left=(e.clientX-rect.left-size/2)+"px";r.style.top=(e.clientY-rect.top-size/2)+"px";fabEl.appendChild(r);setTimeout(function(){r.remove()},600)}
 
-function fabTap(e){   e.stopPropagation();   createRipple(e);   haptic(15);   var speed=parseInt(settings.dblTapSpeed);      if(!settings.multiTap){     fabClickCount++;     clearTimeout(fabTripleTimer);     if(fabClickCount===1){       fabTripleTimer=setTimeout(function(){fabHome();fabClickCount=0},speed);     }else if(fabClickCount>=2){       clearTimeout(fabTripleTimer);       openSheet();       haptic(25);       fabClickCount=0;     }     return;   }      fabClickCount++;   clearTimeout(fabTripleTimer);      if(fabClickCount===1){     fabTripleTimer=setTimeout(function(){fabHome();fabClickCount=0},speed);   }else if(fabClickCount===2){     fabTripleTimer=setTimeout(function(){openSheet();haptic(25);fabClickCount=0},speed);   }else if(fabClickCount>=3){     var a=settings.tripleTap;     if(a==="settings")openSettings();     else if(a==="search")openSearch();     else if(a==="archive")toggleArchive();     else if(a==="none")toast("Triple tap: none");     fabClickCount=0;   } }
+function fabTap(e){
+  if(e&&e.stopPropagation)e.stopPropagation();
+  if(e&&e.preventDefault)e.preventDefault();
+  
+  if(typeof createRipple==="function")createRipple(e);
+  if(typeof haptic==="function")haptic(15);
+  
+  var speed=parseInt(settings.dblTapSpeed)||280;
+  
+  window.__fabClicks=(window.__fabClicks||0)+1;
+  clearTimeout(window.__fabTimer);
+  
+  if(window.__fabClicks===1){
+    window.__fabTimer=setTimeout(function(){
+      if(typeof fabHome==="function")fabHome();
+      window.__fabClicks=0;
+    },speed);
+  }else if(window.__fabClicks>=2){
+    clearTimeout(window.__fabTimer);
+    window.__fabClicks=0;
+    if(typeof openSheet==="function")openSheet();
+    if(typeof haptic==="function")haptic(25);
+  }
+}
 
 function openSheet(){sheetOpen=true;$("sheetOv").classList.remove("closing");$("sheetOv").classList.add("on");$("fab").classList.add("open")}
 function closeSheet(e){if(e&&e.target&&e.target.closest(".sheet"))return;if(!sheetOpen)return;$("sheetOv").classList.add("closing");setTimeout(function(){$("sheetOv").classList.remove("on","closing");$("fab").classList.remove("open")},200);sheetOpen=false}
@@ -1080,7 +1103,7 @@ fab.addEventListener("touchmove",function(e){
 
 fab.addEventListener("touchend",function(e){
   if(!fabTouch.active)return;
-  if(longPressTimer){clearTimeout(longPressTimer);longPressTimer=null;fabTouch.active=false;return}
+  if(longPressTimer){clearTimeout(longPressTimer);longPressTimer=null}
   if(longPressFired){longPressFired=false;fabTouch.active=false;return}
   var dx=fabTouch.dx,dy=fabTouch.dy;
   fabTouch.active=false;
@@ -1116,7 +1139,7 @@ fab.addEventListener("mousedown",function(e){
 });
 fab.addEventListener("mouseup",function(e){
   if(!fabTouch.active)return;
-  if(longPressTimer){clearTimeout(longPressTimer);longPressTimer=null;fabTouch.active=false;return}
+  if(longPressTimer){clearTimeout(longPressTimer);longPressTimer=null}
   if(longPressFired){longPressFired=false;fabTouch.active=false;return}
   var dx=e.clientX-fabTouch.x0,dy=e.clientY-fabTouch.y0;
   fabTouch.active=false;
