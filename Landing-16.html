@@ -375,7 +375,10 @@ body.night .fd input,body.night .fd textarea{background:rgba(255,255,255,.06)}
 
 <div class="cloud-status" id="cloudStatus"><span class="spinner"></span><span id="cloudText">☁️ Connecting...</span></div>
 <div class="toast" id="toast"><span id="tm"></span><button class="undo" id="undoBtn" onclick="doUndo()" style="display:none">↩ Undo</button></div>
-
+<div class="recent-bar" id="recentBar" style="display:none">
+  <div class="rt">🕐 Recent</div>
+  <div class="rlist" id="recentList"></div>
+</div>
 <div id="cards"></div>
 
 <button class="fab" id="fab"><span class="ico" id="fabIcon">🏠</span><span class="filter-label" id="fabFilterLabel"></span><span class="dot" id="fabDot"></span></button>
@@ -674,7 +677,7 @@ function applyAllSettings(){
   try{localStorage.lm_theme=wantDark?"night":"day"}catch(e){}
   var fi=$("fabIcon");if(fi)fi.textContent=settings.fabIcon;
   var tb=$("toast");if(tb)tb.classList.toggle("top",settings.toastPos==="top");
-  if($("recentBar"))$("recentBar").style.display=settings.showRecent?"block":"none";
+  var rb=$("recentBar");if(rb)rb.style.display=settings.showRecent?"block":"none";
   if($("fabDot"))$("fabDot").classList.toggle("on",settings.dotBadge);
   var fabEl=$("fab");
   if(fabEl){fabEl.classList.toggle("shimmer-fx",settings.shimmer);fabEl.classList.toggle("gradient-fx",settings.gradientFx)}
@@ -704,7 +707,14 @@ $("confirmOv").onclick=function(e){if(e.target.id==="confirmOv")cfClose()};
 
 function addRecent(title,cid,iid){recentItems=recentItems.filter(function(r){return r.title!==title});recentItems.unshift({title:title,cid:cid,iid:iid,ts:Date.now()});recentItems=recentItems.slice(0,10);renderRecent()}
 
-function renderRecent(){if(!settings.showRecent){$("recentBar").style.display="none";return}var list=$("recentList"),bar=$("recentBar");if(!recentItems.length){bar.style.display="none";return}bar.style.display="block";list.innerHTML=recentItems.map(function(r){return '<div class="ritem" onclick="openRecent('+r.cid+','+r.iid+')">🕐 '+esc(r.title.substring(0,20))+'</div>'}).join("")}
+function renderRecent(){
+  var bar=$("recentBar"),list=$("recentList");
+  if(!bar||!list)return;
+  if(!settings.showRecent){bar.style.display="none";return}
+  if(!recentItems.length){bar.style.display="none";return}
+  bar.style.display="block";
+  list.innerHTML=recentItems.map(function(r){return '<div class="ritem" onclick="openRecent('+r.cid+','+r.iid+')">🕐 '+esc(r.title.substring(0,20))+'</div>'}).join("");
+}
 
 function openRecent(cid,iid){var c=cards.find(function(x){return x.id===cid});if(!c)return;var it=c.items.find(function(x){return x.id===iid});if(!it)return;onRowClick(cid,iid)}
 
