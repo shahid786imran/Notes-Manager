@@ -922,27 +922,33 @@ const createRipple=e=>{
 };
 
 // ═══ FAB TAP — clean logic ═══
+let fabIgnoreUntil=0;
 const fabTap=e=>{
+  const now=Date.now();
+  // Debounce — ek physical tap se kai events aate hain (touch+mouse+click),
+  // sirf pehla chale, baaki 50ms tak ignore
+  if(now < fabIgnoreUntil){
+    console.log("fabTap debounced");
+    return;
+  }
+  fabIgnoreUntil = now + 50;
+  
   createRipple(e);
   haptic(15);
-  const now=Date.now();
+  
   const speed=parseInt(settings.dblTapSpeed)||250;
   
-  // If gap too large, reset counter
   if(now-fabLast>speed*2){fabClickCount=0}
-  
   fabClickCount++;
   fabLast=now;
   clearTimeout(fabTimer);
   
   if(fabClickCount===1){
-    // Wait — if no more clicks, it's a single tap
     fabTimer=setTimeout(()=>{
       fabClickCount=0;fabLast=0;
       doHomeAction();
     },speed);
   }else if(fabClickCount===2){
-    // Double tap
     fabTimer=setTimeout(()=>{
       fabClickCount=0;fabLast=0;
       openSheet();
