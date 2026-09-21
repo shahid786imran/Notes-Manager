@@ -65,7 +65,7 @@ button:active{transform:scale(.93)}
 .hh h2{font-size:calc(var(--fs) - .5px);font-weight:800;display:flex;align-items:center;gap:8px;min-width:0;flex-wrap:wrap}
 .hh h2 .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hh h2 .sub{font-size:10px;color:var(--mt);font-weight:600;width:100%;display:block;margin-top:2px}
-.hh .em{display:flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:10px;font-size:15px;background:linear-gradient(135deg,var(--p),var(--p2));box-shadow:0 4px 14px rgba(99,102,241,.4);flex:none}
+.hh .em{display:flex;align-items:center;justify-content:center;width:30px;height:30px;font-size:16px;background:transparent;border:0;box-shadow:none;flex:none}
 .hh .ct{font-size:10.5px;color:var(--p);background:rgba(99,102,241,.15);padding:3px 10px;border-radius:99px;font-weight:800;border:1px solid rgba(99,102,241,.25);flex:none}
 body.hide-counts .hh .ct{display:none}
 .hh .ts{font-size:9.5px;color:var(--mt);font-weight:600;flex:none;display:none}
@@ -92,7 +92,7 @@ body.show-timestamps .hh .ts{display:block}
 
 /* Header card */
 .hcard{display:flex;align-items:center;gap:12px;padding:calc(14px * var(--pad)) calc(15px * var(--pad));cursor:pointer}
-.hcard .ic{width:44px;height:44px;flex:none;display:flex;align-items:center;justify-content:center;background:var(--glass);border:1px solid var(--glass-bd);border-radius:14px;font-size:20px}
+body.scroll-locked{overflow:hidden!important;position:fixed;width:100%}
 .hcard .if{flex:1;min-width:0}
 .hcard .t{font-size:13.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;text-decoration:none;color:var(--tx)}
 .hcard .url-preview{font-size:10.5px;color:var(--mt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
@@ -122,7 +122,7 @@ body.show-timestamps .hh .ts{display:block}
 .rw .swipe-bg .left-act{background:linear-gradient(90deg,#ef4444,#dc2626);flex:1;height:100%;display:flex;align-items:center;padding-left:20px}
 .rw .swipe-bg .right-act{background:linear-gradient(90deg,#eab308,#ca8a04);flex:1;height:100%;display:flex;align-items:center;justify-content:flex-end;padding-right:20px}
 .rw .inner{flex:1;display:flex;align-items:center;gap:10px;min-width:0;position:relative;z-index:2;padding:2px 0}
-.rw .ic{background:var(--glass);border:1px solid var(--glass-bd);border-radius:13px;width:40px;height:40px;flex:none;display:flex;align-items:center;justify-content:center;font-size:18px}
+.rw .ic{background:transparent;border:0;width:40px;height:40px;flex:none;display:flex;align-items:center;justify-content:center;font-size:18px}
 .rw .if{flex:1;min-width:0}
 .rw .t{font-size:13.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--tx)}
 .rw .u{display:block;font-size:11.5px;color:var(--mt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:3px}
@@ -834,17 +834,17 @@ function fabTap(e){
 }
 
 /* ═══ Sheet ═══ */
-function openSheet(){sheetOpen=true;sheetOpenedAt=Date.now();$("sheetOv").classList.add("on");$("fab").classList.add("open")}
+function openSheet(){sheetOpen=true;sheetOpenedAt=Date.now();$("sheetOv").classList.add("on");$("fab").classList.add("open");lockScroll()}
 function closeSheet(e){
   if(Date.now()-sheetOpenedAt<400)return;
   if(e&&e.target&&e.target.closest(".sheet"))return;
   if(!sheetOpen)return;
-  $("sheetOv").classList.remove("on");$("fab").classList.remove("open");sheetOpen=false;
+  $("sheetOv").classList.remove("on");$("fab").classList.remove("open");sheetOpen=false;unlockScroll();
 }
 function closeFilterSheet(e){
   if(Date.now()-sheetOpenedAt<400)return;
   if(e&&e.target&&e.target.closest(".sheet"))return;
-  filterSheetOpen=false;$("filterSheetOv").classList.remove("on");
+  filterSheetOpen=false;$("filterSheetOv").classList.remove("on");unlockScroll();
 }
 function sheetAction(a){
   closeSheet();
@@ -968,6 +968,7 @@ function openFilterSheet(){
   filterSheetOpen=true;sheetOpenedAt=Date.now();
   $("filterSheetOv").classList.add("on");
   haptic(20);
+  lockScroll();
 }
 function selectFilterChip(f,label){setFilter(f,label);closeFilterSheet();haptic(15)}
 
@@ -1181,7 +1182,12 @@ function importJSON(){var inp=document.createElement("input");inp.type="file";in
 function clearBin(){if(!bin.length)return toast("Empty");showConfirm("Clear Bin",bin.length+" items will be permanently deleted.","🗑",function(){var old=bin.slice();bin=[];save();render();toast("Cleared",function(){bin=old;save();render()})})}
 
 /* ═══ Close all modals ═══ */
-function closeAll(){aCl();cl();nCl();eCl();cfClose();ndClose();setCl();statsCl();searchCl();moveCl();msCancel();tagCl();$("sheetOv").classList.remove("on");$("filterSheetOv").classList.remove("on");$("fab").classList.remove("open");sheetOpen=false;filterSheetOpen=false}
+  function lockScroll(){document.body.classList.add("scroll-locked")}
+function unlockScroll(){
+  var anyOpen=document.querySelector(".ov.on, .sheet-ov.on");
+  if(!anyOpen)document.body.classList.remove("scroll-locked");
+}
+function closeAll(){aCl();cl();nCl();eCl();cfClose();ndClose();setCl();statsCl();searchCl();moveCl();msCancel();tagCl();$("sheetOv").classList.remove("on");$("filterSheetOv").classList.remove("on");$("fab").classList.remove("open");sheetOpen=false;filterSheetOpen=false;document.body.classList.remove("scroll-locked")}
 
 /* ═══ FAB touch/mouse handlers ═══ */
 var fabTouch={x0:0,y0:0,dx:0,dy:0,active:false,isDragging:false};
@@ -1265,7 +1271,21 @@ document.addEventListener("click",function(e){
 });
 
 window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change",function(){if(settings.themeMode==="auto")applyAllSettings()});
-
+/* Auto scroll-lock for any .ov modal */
+function checkModalScroll(){
+  var anyModal=document.querySelector(".ov.on, .sheet-ov.on");
+  if(anyModal)document.body.classList.add("scroll-locked");
+  else document.body.classList.remove("scroll-locked");
+}
+var _origClassList=Element.prototype.classList;
+/* Override .on toggles — use MutationObserver on body */
+new MutationObserver(function(){
+  checkModalScroll();
+}).observe(document.body,{attributes:true,attributeFilter:["class"]});
+/* Also observe each .ov and .sheet-ov */
+document.querySelectorAll(".ov, .sheet-ov").forEach(function(el){
+  new MutationObserver(checkModalScroll).observe(el,{attributes:true,attributeFilter:["class"]});
+});
 load();
 render();
 updateFabFilter();
