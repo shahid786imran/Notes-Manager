@@ -95,11 +95,11 @@ body.compact-header .hh{padding:calc(8px * var(--pad)) calc(12px * var(--pad))}
 .hh h2{font-size:calc(var(--fs) - .5px);font-weight:800;display:flex;align-items:center;gap:8px;min-width:0;background:transparent;flex-wrap:wrap}
 .hh h2 .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hh h2 .sub{font-size:10px;color:var(--mt);font-weight:600;width:100%;display:block;margin-top:2px}
-.hh .em{display:flex;align-items:center;justify-content:center;width:calc(30px * var(--rowpad));height:calc(30px * var(--rowpad));border-radius:10px;font-size:calc(15px * var(--rowpad));background:linear-gradient(135deg,var(--p),var(--p2));box-shadow:0 4px 14px rgba(99,102,241,.4);flex:none;transition:.3s var(--e)}
+.hh .em{display:flex;align-items:center;justify-content:center;width:calc(30px * var(--rowpad));height:calc(30px * var(--rowpad));font-size:calc(18px * var(--rowpad));flex:none;background:none;box-shadow:none}
 body.compact-header .hh .em{width:calc(24px * var(--rowpad));height:calc(24px * var(--rowpad));font-size:calc(12px * var(--rowpad))}
 .hh:hover .em{transform:rotate(-8deg) scale(1.1)}
-.hh .ct{font-size:10.5px;color:var(--p);background:var(--glass);backdrop-filter:blur(10px);padding:3px 10px;border-radius:99px;font-weight:800;border:1px solid var(--glass-bd);flex:none;transition:.3s}
-.hh .ct.bump{animation:bump 0.4s}
+.hh .ct{font-size:12px;color:var(--mt);font-weight:800;flex:none;background:none;border:none;padding:0}
+.hh .ct.bump{opacity:.6}
 body.hide-counts .hh .ct{display:none}
 .hh .ts{font-size:9.5px;color:var(--mt);font-weight:600;flex:none;display:none!important}
 body.show-timestamps .hh .ts{display:block!important}
@@ -120,7 +120,7 @@ body.show-timestamps .hh .ts{display:block!important}
 .hh .ud.on{display:flex}
 .hh .arc{display:none;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;border-color:transparent;width:calc(30px * var(--rowpad));height:calc(30px * var(--rowpad));padding:0;align-items:center;justify-content:center;border-radius:10px}
 .hh .arc.on{display:flex}
-.hh .cx{width:calc(30px * var(--rowpad));height:calc(30px * var(--rowpad));padding:0;font-size:calc(13px * var(--rowpad));font-weight:800;color:var(--p);display:flex;align-items:center;justify-content:center;transition:transform .3s var(--e);background:var(--glass);backdrop-filter:blur(10px);border:1px solid var(--glass-bd);border-radius:10px}
+.hh .cx{width:calc(30px * var(--rowpad));height:calc(30px * var(--rowpad));padding:0;font-size:calc(13px * var(--rowpad));font-weight:800;color:var(--p);display:flex;align-items:center;justify-content:center;transition:transform .3s var(--e);background:none;border:none;border-radius:0}
 .hh .cx.rot{transform:rotate(90deg)}
 .hh .chk{display:none;width:22px;height:22px;border-radius:50%;border:2px solid var(--bd);align-items:center;justify-content:center;flex:none;font-size:12px;color:transparent;cursor:pointer;transition:.2s}
 .hh .chk.on{display:flex}
@@ -1274,7 +1274,35 @@ const ndDeleteNote=()=>{const{cid,iid}=ndCur;ndClose();setTimeout(()=>askArchive
 const ndExportPDF=()=>{const {cid,iid}=ndCur;const c=cards.find(x=>x.id===cid),it=c.items.find(x=>x.id===iid);const win=window.open("","_blank");win.document.write(`<html><head><title>${esc(it.title)}</title><style>body{font-family:sans-serif;padding:40px;max-width:700px;margin:auto;color:#1e293b;line-height:1.6}h1{color:#6366f1}</style></head><body><h1>${esc(it.title)}</h1><div style="white-space:pre-wrap;margin-top:20px">${esc(it.content)}</div><script>setTimeout(()=>{window.print()},500)<\/script></body></html>`);win.document.close();toast("📄 PDF ready")};
 const ndShare=async()=>{const {cid,iid}=ndCur;const c=cards.find(x=>x.id===cid),it=c.items.find(x=>x.id===iid);const data={title:it.title,text:it.content||""};if(navigator.share){try{await navigator.share(data);toast("📤 Shared")}catch(e){}}else{await navigator.clipboard.writeText(`${it.title}\n\n${it.content||""}`);toast("📋 Copied")}};
 
-const fmtTime=ts=>{if(!ts)return"";const d=new Date(ts),now=Date.now(),diff=now-ts;if(diff<60000)return"just now";if(diff<3600000)return Math.floor(diff/60000)+"m ago";if(diff<86400000)return Math.floor(diff/3600000)+"h ago";return d.toLocaleDateString()};
+const fmtTime=ts=>{
+  if(!ts)return"";
+  const diff=Date.now()-ts;
+  const MIN=60000,HOUR=3600000,DAY=86400000;
+  
+  // ── 1 din se kam: hours + minutes ──
+  if(diff<DAY){
+    const h=Math.floor(diff/HOUR);
+    const m=Math.floor((diff%HOUR)/MIN);
+    if(h>0&&m>0)return h+"h "+m+"m";
+    if(h>0)return h+"h";
+    if(m>0)return m+"m";
+    return"just now";
+  }
+  
+  // ── 1 din ya zyada: Yr, Mo, Day ──
+  let remaining=Math.floor(diff/DAY);
+  const yr=Math.floor(remaining/365);
+  remaining-=yr*365;
+  const mo=Math.floor(remaining/30);
+  remaining-=mo*30;
+  const dy=remaining;
+  
+  const parts=[];
+  if(yr>0)parts.push(yr+" Yr");
+  if(mo>0)parts.push(mo+" Mo");
+  if(dy>0)parts.push(dy+" Day");
+  return parts.join(", ")||"1 Day";
+};
 const filterList=list=>{if(!Array.isArray(list))return[];if(currentFilter==="all"||!currentFilter)return list;if(currentFilter==="pinned")return list.filter(c=>c.pinned);if(currentFilter==="fav")return list.filter(c=>c.fav);if(currentFilter==="today"){const start=new Date();start.setHours(0,0,0,0);return list.filter(c=>c.updated&&c.updated>=start.getTime())}return list.filter(c=>c.tag===currentFilter)};
 
 // ═══ RENDER ═══
