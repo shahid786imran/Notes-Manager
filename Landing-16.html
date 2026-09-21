@@ -906,11 +906,11 @@ function onTM(e){if(!sw.active)return;var dx=e.touches[0].clientX-sw.x0;sw.dx=dx
 function onTE(){if(!sw.active)return;var dx=sw.dx;if(sw.inner)sw.inner.style.transform="";if(sw.el)sw.el.classList.remove("swiping");var bg=sw.el?sw.el.querySelector(".swipe-bg"):null;if(bg)bg.style.opacity=0;sw.active=false;if(Math.abs(dx)<60)return;if(dx<0)binItem(sw.cid,sw.id);else editItem(sw.cid,sw.id)}
 
 /* ═══ Drag ═══ */
-function startDragTimer(e,type,id,cid){if(e.target.closest("a,button,.cx,.ad,.ud,.arc,.ac,.chk"))return;dragState.timer=setTimeout(function(){dragState.active=true;dragState.type=type;dragState.id=id;dragState.cardId=cid;var el=document.querySelector('[data-flipid="'+(type==="card"?"c":"i")+'-'+id+'"]');if(el){el.classList.add("dragging");el.setAttribute("draggable","true")}haptic(20);toast("Drag mode")},500)}
+function startDragTimer(e,type,id,cid){return}
 function cancelDragTimer(){if(dragState.timer){clearTimeout(dragState.timer);dragState.timer=null}}
 function endDrag(){cancelDragTimer();if(dragState.active){document.querySelectorAll(".dragging").forEach(function(el){el.classList.remove("dragging");el.removeAttribute("draggable")});dragState.active=false}}
-function onDropCard(e,targetId){e.preventDefault();document.querySelectorAll(".card").forEach(function(c){c.classList.remove("drag-over")});if(!dragState.active||dragState.type!=="card"||dragState.id===targetId)return;var list=showBin?bin:cards;var fromIdx=list.findIndex(function(x){return x.id===dragState.id}),toIdx=list.findIndex(function(x){return x.id===targetId});if(fromIdx<0||toIdx<0)return;var rects={};document.querySelectorAll(".card").forEach(function(el){if(el.dataset.flipid)rects[el.dataset.flipid]=el.getBoundingClientRect()});var moved=list.splice(fromIdx,1)[0];list.splice(toIdx,0,moved);save();render();requestAnimationFrame(function(){flip(".card",rects)});dragState.active=false}
-function onDropItem(e,targetId,cid){e.preventDefault();document.querySelectorAll(".rw").forEach(function(r){r.classList.remove("drag-over")});if(!dragState.active||dragState.type!=="item"||dragState.id===targetId)return;var c=cards.find(function(x){return x.id===cid});if(!c)return;var fromIdx=c.items.findIndex(function(x){return x.id===dragState.id}),toIdx=c.items.findIndex(function(x){return x.id===targetId});if(fromIdx<0||toIdx<0)return;var rects={};document.querySelectorAll(".rw").forEach(function(el){if(el.dataset.flipid)rects[el.dataset.flipid]=el.getBoundingClientRect()});var moved=c.items.splice(fromIdx,1)[0];c.items.splice(toIdx,0,moved);save();render();requestAnimationFrame(function(){flip(".rw",rects)});dragState.active=false}
+function onDropCard(e,targetId){e.preventDefault()}
+function onDropCard(e,targetId){e.preventDefault()}
 
 /* ═══ Row Click ═══ */
 function onRowClick(cid,iid){
