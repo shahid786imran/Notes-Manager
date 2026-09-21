@@ -584,7 +584,7 @@ body:not(.bin-view) .ms-bin{display:none}
 </div>
 <script>
 var $=function(i){return document.getElementById(i)};
-var esc=function(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})};
+var esc=function(s){return String(s==null?"":s).replace(/[&\x3c\x3e"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})};
 
 /* State */
 var toastT,editAll=false,showBin=false,searchQ="",lastAction=null,pendingConfirm=null,newIcon="📒",editing={},sheetOpen=false,ndEditMode=false;
@@ -1149,7 +1149,16 @@ function ndEnterEdit(){var c=cards.find(function(x){return x.id===ndCur.cid}),it
 function ndSaveEdit(){var c=cards.find(function(x){return x.id===ndCur.cid}),it=c.items.find(function(x){return x.id===ndCur.iid});it.title=$("ndT").value.trim()||"Untitled";it.content=$("ndB").value;it.edited=Date.now();c.updated=Date.now();save();ndEditMode=false;openNoteDetail(ndCur.cid,ndCur.iid);toast("✓ Saved")}
 function ndCancelEdit(){ndEditMode=false;openNoteDetail(ndCur.cid,ndCur.iid)}
 function ndDeleteNote(){var cid=ndCur.cid,iid=ndCur.iid;ndClose();setTimeout(function(){binItem(cid,iid)},200)}
-function ndExportPDF(){var cid=ndCur.cid,iid=ndCur.iid;var c=cards.find(function(x){return x.id===cid}),it=c.items.find(function(x){return x.id===iid});var w=window.open("","_blank");w.document.write('<html><head><title>'+esc(it.title)+'</title><style>body{font-family:sans-serif;padding:40px;max-width:700px;margin:auto;line-height:1.6}h1{color:#6366f1}</style></head><body><h1>'+esc(it.title)+'</h1><div style="white-space:pre-wrap;margin-top:20px">'+esc(it.content)+'</div></body></html>');w.document.close();setTimeout(function(){w.print()},500);toast("📄 PDF ready")}
+function ndExportPDF(){
+  var cid=ndCur.cid,iid=ndCur.iid;
+  var c=cards.find(function(x){return x.id===cid}),it=c.items.find(function(x){return x.id===iid});
+  var w=window.open("","_blank");
+  var html='<html><head><title>'+esc(it.title)+'</title></head><body style="font-family:sans-serif;padding:40px;max-width:700px;margin:auto;line-height:1.6"><h1 style="color:#6366f1">'+esc(it.title)+'</h1><div style="white-space:pre-wrap;margin-top:20px">'+esc(it.content)+'</div></body></html>';
+  w.document.write(html);
+  w.document.close();
+  setTimeout(function(){w.print()},500);
+  toast("📄 PDF ready");
+}
 function ndShare(){var cid=ndCur.cid,iid=ndCur.iid;var c=cards.find(function(x){return x.id===cid}),it=c.items.find(function(x){return x.id===iid});if(navigator.share){navigator.share({title:it.title,text:it.content||""}).then(function(){toast("📤 Shared")}).catch(function(){})}else{navigator.clipboard.writeText(it.title+"\n\n"+(it.content||"")).then(function(){toast("📋 Copied")})}}
 
 /* Filter list */
