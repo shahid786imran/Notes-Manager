@@ -376,11 +376,6 @@ body.night .fd input,body.night .fd textarea{background:rgba(255,255,255,.06)}
 <div class="cloud-status" id="cloudStatus"><span class="spinner"></span><span id="cloudText">☁️ Connecting...</span></div>
 <div class="toast" id="toast"><span id="tm"></span><button class="undo" id="undoBtn" onclick="doUndo()" style="display:none">↩ Undo</button></div>
 
-<div class="recent-bar" id="recentBar" style="display:none">
-  <div class="rt">🕐 Recent</div>
-  <div class="rlist" id="recentList"></div>
-</div>
-
 <div id="cards"></div>
 
 <button class="fab" id="fab"><span class="ico" id="fabIcon">🏠</span><span class="filter-label" id="fabFilterLabel"></span><span class="dot" id="fabDot"></span></button>
@@ -725,7 +720,7 @@ function fabHome(){if(settings.homeMode==="sync"&&typeof window.syncFromFirebase
 
 function createRipple(e){if(!settings.ripple)return;var fabEl=$("fab"),r=document.createElement("span");r.className="ripple";var rect=fabEl.getBoundingClientRect();var size=Math.max(rect.width,rect.height);r.style.width=size+"px";r.style.height=size+"px";r.style.left=(e.clientX-rect.left-size/2)+"px";r.style.top=(e.clientY-rect.top-size/2)+"px";fabEl.appendChild(r);setTimeout(function(){r.remove()},600)}
 
-function fabTap(e){e.stopPropagation();createRipple(e);haptic(15);var now=Date.now();var speed=parseInt(settings.dblTapSpeed);if(settings.multiTap){fabClickCount++;clearTimeout(fabTripleTimer);if(fabClickCount===1){fabTripleTimer=setTimeout(function(){if(now-fabLast<speed){fabClickCount=0;fabLast=0;openSheet();haptic(25)}else{fabHome();fabClickCount=0;fabLast=0}},speed);fabLast=now}else if(fabClickCount===2){clearTimeout(fabTripleTimer);fabTripleTimer=setTimeout(function(){fabClickCount=0;fabLast=0;openSheet();haptic(25)},speed)}else if(fabClickCount>=3){clearTimeout(fabTripleTimer);fabClickCount=0;fabLast=0;var a=settings.tripleTap;if(a==="settings")openSettings();else if(a==="search")openSearch();else if(a==="archive")toggleArchive();else if(a==="none")toast("Triple tap: none")}}else{if(now-fabLast<speed){clearTimeout(fabTimer);fabLast=0;openSheet()}else{fabLast=now;fabTimer=setTimeout(function(){fabHome();fabLast=0},speed)}}}
+function fabTap(e){   e.stopPropagation();   createRipple(e);   haptic(15);   var speed=parseInt(settings.dblTapSpeed);      if(!settings.multiTap){     fabClickCount++;     clearTimeout(fabTripleTimer);     if(fabClickCount===1){       fabTripleTimer=setTimeout(function(){fabHome();fabClickCount=0},speed);     }else if(fabClickCount>=2){       clearTimeout(fabTripleTimer);       openSheet();       haptic(25);       fabClickCount=0;     }     return;   }      fabClickCount++;   clearTimeout(fabTripleTimer);      if(fabClickCount===1){     fabTripleTimer=setTimeout(function(){fabHome();fabClickCount=0},speed);   }else if(fabClickCount===2){     fabTripleTimer=setTimeout(function(){openSheet();haptic(25);fabClickCount=0},speed);   }else if(fabClickCount>=3){     var a=settings.tripleTap;     if(a==="settings")openSettings();     else if(a==="search")openSearch();     else if(a==="archive")toggleArchive();     else if(a==="none")toast("Triple tap: none");     fabClickCount=0;   } }
 
 function openSheet(){sheetOpen=true;$("sheetOv").classList.remove("closing");$("sheetOv").classList.add("on");$("fab").classList.add("open")}
 function closeSheet(e){if(e&&e.target&&e.target.closest(".sheet"))return;if(!sheetOpen)return;$("sheetOv").classList.add("closing");setTimeout(function(){$("sheetOv").classList.remove("on","closing");$("fab").classList.remove("open")},200);sheetOpen=false}
@@ -804,7 +799,50 @@ $("moveOv").onclick=function(e){if(e.target.id==="moveOv")moveCl()};
 
 function doMoveToCard(targetCid){moveCl();if(!multiSelect.ids.size)return;var tc=cards.find(function(x){return x.id===targetCid});if(!tc)return;multiSelect.ids.forEach(function(key){if(key.startsWith("c-"))return;var parts=key.split("-").map(Number);var cid=parts[0],iid=parts[1];var c=cards.find(function(x){return x.id===cid});if(c){var idx=c.items.findIndex(function(x){return x.id===iid});if(idx>=0){var rm=c.items.splice(idx,1)[0];tc.items.push(rm)}}});save();msCancel();render();toast("Moved")}
 
-function openFilterSheet(){var grid=$("filterGrid");var builtinFilters=[{id:"all",icon:"",label:"All"},{id:"pinned",icon:"📌",label:"Pinned"},{id:"fav",icon:"⭐",label:"Favorites"},{id:"today",icon:"🕐",label:"Today"},{id:"work",icon:"💼",label:"Work"},{id:"personal",icon:"🏠",label:"Personal"},{id:"important",icon:"🔴",label:"Important"},{id:"idea",icon:"💡",label:"Idea"}];var html=builtinFilters.map(function(f){var cls=f.id==="all"?"all":f.id;var cnt=getFilterCount(f.id);var on=currentFilter===f.id?"on":"";return '<div class="filter-chip '+cls+' '+on+'" onclick="selectFilterChip(\''+f.id+'\',\''+esc(f.label)+'\')">'+(f.icon?f.icon+" ":"")+esc(f.label)+'<span class="cnt">'+cnt+'</span></div>'}).join("");html+=customTags.map(function(t){var cnt=getFilterCount(t.id);var on=currentFilter===t.id?"on":"";return '<div class="filter-chip custom '+on+'" onclick="selectFilterChip(\''+t.id+'\',\''+esc(t.name)+'\')">'+t.icon+' '+esc(t.name)+'<span class="cnt">'+cnt+'</span><span class="del" onclick="event.stopPropagation();deleteCustomTag(\''+t.id+'\')">✕</span></div>'}).join("");grid.innerHTML=html;filterSheetOpen=true;$("filterSheetOv").classList.add("on");haptic(20)}
+function openFilterSheet(){
+  var grid=$("filterGrid");
+  var builtinFilters=[
+    {id:"all",icon:"",label:"All"},
+    {id:"pinned",icon:"📌",label:"Pinned"},
+    {id:"fav",icon:"⭐",label:"Favorites"},
+    {id:"today",icon:"🕐",label:"Today"},
+    {id:"work",icon:"💼",label:"Work"},
+    {id:"personal",icon:"🏠",label:"Personal"},
+    {id:"important",icon:"🔴",label:"Important"},
+    {id:"idea",icon:"💡",label:"Idea"}
+  ];
+  
+  var html="";
+  
+  builtinFilters.forEach(function(f){
+    var cnt=getFilterCount(f.id);
+    /* "All" hamesha dikhe, baaki sirf jab count > 0 ho */
+    if(f.id!=="all" && cnt===0 && currentFilter!==f.id) return;
+    
+    var cls=f.id==="all"?"all":f.id;
+    var on=currentFilter===f.id?"on":"";
+    html+='<div class="filter-chip '+cls+' '+on+'" onclick="selectFilterChip(\''+f.id+'\',\''+esc(f.label)+'\')">'+(f.icon?f.icon+" ":"")+esc(f.label)+'<span class="cnt">'+cnt+'</span></div>';
+  });
+  
+  customTags.forEach(function(t){
+    var cnt=getFilterCount(t.id);
+    /* Custom tags sirf jab count > 0 ho (ya currently active ho) */
+    if(cnt===0 && currentFilter!==t.id) return;
+    
+    var on=currentFilter===t.id?"on":"";
+    html+='<div class="filter-chip custom '+on+'" onclick="selectFilterChip(\''+t.id+'\',\''+esc(t.name)+'\')">'+t.icon+' '+esc(t.name)+'<span class="cnt">'+cnt+'</span><span class="del" onclick="event.stopPropagation();deleteCustomTag(\''+t.id+'\')">✕</span></div>';
+  });
+  
+  /* Agar koi filter nahi hai to empty message */
+  if(!html){
+    html='<div style="padding:20px;text-align:center;color:var(--mt);font-size:12px">No tags available. Add tags to your cards first.</div>';
+  }
+  
+  grid.innerHTML=html;
+  filterSheetOpen=true;
+  $("filterSheetOv").classList.add("on");
+  haptic(20);
+}
 
 function closeFilterSheet(e){if(e&&e.target&&e.target.closest(".sheet"))return;filterSheetOpen=false;$("filterSheetOv").classList.remove("on")}
 
