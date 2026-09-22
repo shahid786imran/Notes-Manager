@@ -1001,6 +1001,7 @@ body.night .fd input,body.night .fd textarea,body.night .fd select{background:rg
       <div class="setting-row"><div class="sl"><div class="lb">Expiry notifications</div><div class="sb">Alert before item expires</div></div><div class="switch on" id="swExpiryNotif" onclick="toggleSwitch('expiryNotif')"></div></div>
       <div class="setting-row flexcol"><div class="sl"><div class="lb">Notify before expiry</div></div>
         <div class="seg" id="expiryNotifSeg" style="width:100%">
+          <button data-v="always" onclick="setExpiryNotif('always')">Always</button>
           <button data-v="1" onclick="setExpiryNotif('1')">1 day</button>
           <button data-v="3" onclick="setExpiryNotif('3')">3 days</button>
           <button data-v="7" onclick="setExpiryNotif('7')">1 week</button>
@@ -2313,6 +2314,171 @@ body.night .expiry-custom-wrap input[type="date"]{background:rgba(255,255,255,.0
   };
 
   console.log("Expiry chips ready");
+})();
+</script>
+<script>
+// ═══════════════════════════════════════════════
+// EXPIRY NOTIFICATIONS — Complete Setup
+// ═══════════════════════════════════════════════
+(function(){
+  const DAY=86400000;
+
+  // ═══ MAIN NOTIFICATION FUNCTION ═══
+  function checkExpiryNotifications(){
+    // Read settings directly from localStorage (avoid dependency)
+    const notifOn=localStorage.getItem("nm_expiryNotif")!=="false";
+    if(!notifOn)return;
+    if(!("Notification"in window))return;
+    if(Notification.permission!=="granted")return;
+
+    const mode=localStorage.getItem("nm_expiryNotifDays")||"1";
+    const now=Date.now();
+    const expiring=[];
+
+    // Read cards data
+    let cards=[];
+    try{
+      const d=localStorage.getItem("nm_data");
+      if(d){const p=JSON.parse(d);cards=p.cards||[]}
+    }catch(e){return}
+
+    cards.forEach(c=>{
+      if(!c.items)return;
+      c.items.forEach(it=>{
+        if(!it.expiry)return;
+        const exp=new Date(it.expiry).getTime();
+        if(isNaN(exp))return;
+        const diff=exp-now;
+        if(diff<=0)return; // already expired
+        const daysLeft=diff/DAY;
+        let shouldNotify=false;
+        if(mode==="always"){
+          shouldNotify=true;
+        }else{
+          const md=parseInt(mode)||1;
+          if(daysLeft<=md)shouldNotify=true;
+        }
+        if(shouldNotify){
+          expiring.push({
+            title:it.title,
+            daysLeft:Math.ceil(daysLeft),
+            url:it.url||""
+          });
+        }
+      });
+    });
+
+    if(!expiring.length)return;
+
+    // Anti-spam
+    const nowKey="nm_lastExpiryNotif";
+    const last=parseInt(localStorage.getItem(nowKey))||0;
+    const minGap=mode==="always"?30*60*1000:6*60*60*1000;
+    if(now-last<minGap)return;
+
+    try{
+      localStorage.setItem(nowKey,String(now));
+
+      let body="";
+      if(expiring.length===1){
+        const e=expiring[0];
+        body='"'+e.title+'" expires in '+e.daysLeft+' day'+(e.daysLeft!==1?'s':'');
+      }else if(expiring.length<=3){
+        body=expiring.length+" items expiring:\n"+expiring.map(e=>"• "+e.title+" ("+e.daysLeft+"d)").join("\n");
+      }else{
+        body=expiring.length+" items expiring soon";
+      }
+
+      const n=new Notification("🔔 Links Manager",{
+        body:body,
+        icon:"🔗",
+        tag:"expiry-"+now
+      });
+
+      n.onclick=function(){
+        window.focus();
+        if(typeof openHealth==="function")openHealth();
+        this.close();
+      };
+
+      setTimeout(()=>n.close(),15000);
+    }catch(e){console.error("Notif error:",e)}
+  }
+
+  window.checkExpiryNotifications=checkExpiryNotifications;
+
+  // ═══ CHECK INTERVALS ═══
+  // Every 30 min
+  setInterval(checkExpiryNotifications,30*60*1000);
+  // On tab visible
+  document.addEventListener("visibilitychange",()=>{
+    if(!document.hidden)setTimeout(checkExpiryNotifications,2000);
+  });
+  // On load
+  setTimeout(checkExpiryNotifications,3000);
+
+  // ═══ SET EXPIRY NOTIF SETTING ═══
+  window.setExpiryNotif=function(v){
+    localStorage.setItem("nm_expiryNotifDays",v);
+    // Reset timer so new mode applies
+    localStorage.removeItem("nm_lastExpiryNotif");
+    // Update UI
+    document.querySelectorAll("#expiryNotifSeg button").forEach(b=>{
+      b.classList.toggle("on",b.dataset.v===String(v));
+    });
+    const labels={always:"Always",1:"1 day before",3:"3 days before",7:"1 week before"};
+    if(typeof toast==="function")toast("🔔 "+(labels[v]||v));
+    // Trigger immediate check for "always" mode
+    if(v==="always")setTimeout(checkExpiryNotifications,500);
+  };
+
+  // ═══ INJECT "ALWAYS" BUTTON INTO SETTINGS ═══
+  function injectAlwaysButton(){
+    const seg=document.getElementById("expiryNotifSeg");
+    if(!seg)return false;
+    if(seg.querySelector('[data-v="always"]'))return true;
+
+    // Create "Always" button
+    const btn=document.createElement("button");
+    btn.setAttribute("data-v","always");
+    btn.textContent="Always";
+    btn.setAttribute("onclick","setExpiryNotif('always')");
+    // Insert as first child
+    seg.insertBefore(btn,seg.firstChild);
+    return true;
+  }
+
+  // Watch settings modal
+  const mo=new MutationObserver(()=>{
+    const ov=document.getElementById("setOv");
+    if(ov&&ov.classList.contains("on"))setTimeout(injectAlwaysButton,50);
+  });
+
+  function init(){
+    const ov=document.getElementById("setOv");
+    if(ov){
+      mo.observe(ov,{attributes:true,attributeFilter:["class"]});
+      if(ov.classList.contains("on"))injectAlwaysButton();
+    }
+    // Also update existing setting UI to reflect current mode
+    const cur=localStorage.getItem("nm_expiryNotifDays")||"1";
+    document.querySelectorAll("#expiryNotifSeg button").forEach(b=>{
+      b.classList.toggle("on",b.dataset.v===String(cur));
+    });
+  }
+
+  if(document.readyState==="loading"){
+    document.addEventListener("DOMContentLoaded",init);
+  }else{
+    init();
+  }
+
+  // Check permission + request if not granted
+  if("Notification"in window&&Notification.permission==="default"){
+    setTimeout(()=>{Notification.requestPermission()},5000);
+  }
+
+  console.log("✅ Expiry notifications active. Mode:",localStorage.getItem("nm_expiryNotifDays")||"1");
 })();
 </script>
 </body>
