@@ -3337,6 +3337,18 @@ function getCategoryDepth(cid){let d=0,cur=db.categories.find(c=>c.id===cid);con
 // ============================================================
 // EVENT LISTENERS & INIT
 // ============================================================
+// ============================================================
+// SAFE EVENT LISTENER HELPER
+// ============================================================
+function on(id,event,handler,opts){
+  const el=document.getElementById(id);
+  if(el){el.addEventListener(event,handler,opts);}
+  else{console.warn("[Missing element]",id);}
+}
+
+// ============================================================
+// EVENT LISTENERS & INIT
+// ============================================================
 document.addEventListener("mousedown",(e)=>{lastMousedownTarget=e.target;},true);
 document.addEventListener("click",(e)=>{
   if(!editingNoteId)return;
@@ -3352,24 +3364,24 @@ document.addEventListener("mouseleave",()=>{const tb=document.getElementById("to
 document.addEventListener("touchstart",(e)=>{const target=e.target.closest("[data-tooltip]");const tb=document.getElementById("tooltipBox");if(target&&tb){const tip=target.getAttribute("data-tooltip");const r=target.getBoundingClientRect();tb.textContent=tip;tb.style.left=Math.min(r.left,window.innerWidth-200)+"px";tb.style.top=(r.top-30)+"px";tb.classList.add("show");setTimeout(()=>{tb.classList.remove("show");},1000);}else if(tb)tb.classList.remove("show");},{passive:true});
 window.addEventListener("scroll",()=>{const tb=document.getElementById("tooltipBox");if(tb)tb.classList.remove("show");const btn=document.getElementById("scrollTopBtn");if(!btn)return;if(window.scrollY>200){btn.classList.add("show");clearTimeout(scrollTopHideTimer);scrollTopHideTimer=setTimeout(()=>{btn.classList.remove("show");},2000);}else btn.classList.remove("show");if(db.settings.rememberLastScroll)scrollPositions.detail=window.scrollY||0;});
 
-document.getElementById("sidebarSearchIconBtn").addEventListener("click",openSidebarSearch);
-document.getElementById("sidebarSearchClearBtn").addEventListener("click",function(){const i=document.getElementById("sidebarSearchInput");if(i)i.value="";searchText="";this.classList.remove("show");renderNoteList();});
-document.getElementById("sidebarSearchInput").addEventListener("input",function(){searchText=this.value.trim();const clr=document.getElementById("sidebarSearchClearBtn");if(this.value)clr.classList.add("show");else clr.classList.remove("show");if(["all","favorites","pinned","locked","uncat","category","tag"].includes(currentView))renderNoteList();});
+on("sidebarSearchIconBtn","click",openSidebarSearch);
+on("sidebarSearchClearBtn","click",function(){const i=document.getElementById("sidebarSearchInput");if(i)i.value="";searchText="";this.classList.remove("show");renderNoteList();});
+on("sidebarSearchInput","input",function(){searchText=this.value.trim();const clr=document.getElementById("sidebarSearchClearBtn");if(clr){if(this.value)clr.classList.add("show");else clr.classList.remove("show");}if(["all","favorites","pinned","locked","uncat","category","tag"].includes(currentView))renderNoteList();});
 
-document.getElementById("smartSyncBtn").addEventListener("click",function(){if(!currentUser){showToast("Not signed in","error");return;}synchronize();});
-document.getElementById("addBtn").addEventListener("click",addNote);
-document.getElementById("sidebarToggle").addEventListener("click",toggleSidebar);
-document.getElementById("rsbToggle").addEventListener("click",toggleRightSidebar);
-document.getElementById("sidebarOverlay").addEventListener("click",()=>{if(sidebarOpen)toggleSidebar();});
-document.getElementById("rightSidebarOverlay").addEventListener("click",(e)=>{e.stopPropagation();if(rightSidebarOpen){rightSidebarOpen=false;document.getElementById("rightSidebar").classList.remove("open");document.getElementById("rightSidebarOverlay").classList.remove("open");document.getElementById("rsbToggle").textContent="☷";if(rightEditMode)toggleRightEditMode();if(!sidebarOpen)document.body.style.overflow="";}},true);
-document.getElementById("activateBtn").addEventListener("click",connectDrive);
-document.getElementById("scrollTopBtn").addEventListener("click",()=>{window.scrollTo({top:0,behavior:"smooth"});document.getElementById("scrollTopBtn").classList.remove("show");});
+on("smartSyncBtn","click",function(){if(!currentUser){showToast("Not signed in","error");return;}synchronize();});
+on("addBtn","click",addNote);
+on("sidebarToggle","click",toggleSidebar);
+on("rsbToggle","click",toggleRightSidebar);
+on("sidebarOverlay","click",()=>{if(sidebarOpen)toggleSidebar();});
+on("rightSidebarOverlay","click",(e)=>{e.stopPropagation();if(rightSidebarOpen){rightSidebarOpen=false;const rsb=document.getElementById("rightSidebar");if(rsb)rsb.classList.remove("open");const rso=document.getElementById("rightSidebarOverlay");if(rso)rso.classList.remove("open");const tb=document.getElementById("rsbToggle");if(tb)tb.textContent="☷";if(rightEditMode)toggleRightEditMode();if(!sidebarOpen)document.body.style.overflow="";}},true);
+on("activateBtn","click",connectDrive);
+on("scrollTopBtn","click",()=>{window.scrollTo({top:0,behavior:"smooth"});const b=document.getElementById("scrollTopBtn");if(b)b.classList.remove("show");});
 const noteListEl=document.getElementById("noteList");
 if(noteListEl){noteListEl.addEventListener("scroll",function(){if(db.settings.rememberLastScroll)scrollPositions.noteList=this.scrollTop;if(currentView==="attachments")return;const atEnd=this.scrollTop+this.clientHeight>=this.scrollHeight-50;if(atEnd){if(!isLoadingMore){isLoadingMore=true;const total=getVisibleNotes().length;if(loadedNotesCount<total){loadedNotesCount+=Number(db.settings.defaultViewCount||50);renderNoteList();}setTimeout(()=>{isLoadingMore=false;},300);}}});}
 document.addEventListener("click",(e)=>{const cm=document.getElementById("contextMenu");if(cm&&!cm.contains(e.target))cm.classList.remove("show");});
 document.addEventListener("keydown",(e)=>{if(e.ctrlKey&&e.key.toLowerCase()==="s"){e.preventDefault();if(editingNoteId)saveCurrent();else if(pendingChanges)saveDatabaseToFirebase();}if(e.key==="Escape"){if(document.getElementById("cpOverlay").classList.contains("open")){ColorPicker.close();return;}if(document.getElementById("popupBackdrop").classList.contains("show")){closePopup();return;}if(document.getElementById("fullscreenOverlay").classList.contains("show")){closeFullscreen();return;}if(document.getElementById("contextMenu").classList.contains("show")){closeCtx();return;}if(document.getElementById("activeDropdownFloat")){closeFloatingDropdown();return;}if(editingNoteId){cancelEdit();return;}if(rightSidebarOpen){toggleRightSidebar();return;}if(sidebarOpen)toggleSidebar();}});
-document.getElementById("popupBackdrop").addEventListener("click",(e)=>{if(e.target.id==="popupBackdrop")closePopup();});
-document.getElementById("dbInfoPopup").addEventListener("click",(e)=>{if(e.target.id==="dbInfoPopup")closeDbInfo();});
+on("popupBackdrop","click",(e)=>{if(e.target.id==="popupBackdrop")closePopup();});
+on("dbInfoPopup","click",(e)=>{if(e.target.id==="dbInfoPopup")closeDbInfo();});
 window.addEventListener("resize",()=>{applyCompactMode();});
 function applyCompactMode(){const th=Number(db.settings.compactModeThreshold||850);if(window.innerWidth<=th)document.body.classList.add("compact-mode");else document.body.classList.remove("compact-mode");}
 
@@ -3400,9 +3412,9 @@ function initSwipeSidebars(){
 function initializeApp(){
   try{
     sidebarOpen=false;rightSidebarOpen=false;
-    document.getElementById("sidebar").classList.remove("open");
-    document.getElementById("rightSidebar").classList.remove("open");
-    document.getElementById("sidebarOverlay").classList.remove("open");
+    const sb=document.getElementById("sidebar");if(sb)sb.classList.remove("open");
+    const rsb=document.getElementById("rightSidebar");if(rsb)rsb.classList.remove("open");
+    const sbo=document.getElementById("sidebarOverlay");if(sbo)sbo.classList.remove("open");
     const ro=document.getElementById("rightSidebarOverlay");if(ro)ro.classList.remove("open");
     document.body.style.overflow="";
     db=normalizeDatabase(db);
