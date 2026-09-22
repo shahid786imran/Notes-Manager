@@ -2112,5 +2112,208 @@ window.getExpiryColor=function(ts){
   return"var(--ok)";                      // 1 week+ → green
 };
 </script>
+<style>
+/* ═══ Expiry Chips ═══ */
+.expiry-chips{
+  display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;
+}
+.expiry-chip{
+  padding:6px 12px;border-radius:99px;
+  font-size:11.5px;font-weight:700;
+  background:var(--glass);border:1.5px solid var(--glass-bd);
+  color:var(--tx);cursor:pointer;font-family:inherit;
+  transition:.2s;
+}
+.expiry-chip:hover{transform:translateY(-1px)}
+.expiry-chip.on{
+  background:linear-gradient(135deg,var(--p),var(--p2));
+  color:#fff;border-color:transparent;
+  box-shadow:0 3px 10px rgba(99,102,241,.4);
+}
+.expiry-chip.custom-chip{
+  background:transparent;border:1.5px dashed var(--p);
+  color:var(--p);font-weight:800;
+}
+.expiry-custom-wrap{
+  margin-top:8px;display:none;
+}
+.expiry-custom-wrap.on{display:block}
+.expiry-custom-wrap input[type="date"]{
+  width:100%;padding:10px 12px;
+  background:var(--glass);border:1px solid var(--glass-bd);
+  border-radius:10px;color:var(--tx);font-size:14px;
+  font-family:inherit;outline:none;
+}
+body.night .expiry-custom-wrap input[type="date"]{background:rgba(255,255,255,.06)}
+</style>
+
+<script>
+// ═══════════════════════════════════════════════
+// EXPIRY CHIPS — Replace date inputs
+// ═══════════════════════════════════════════════
+(function(){
+  const OPTIONS=[
+    {label:"Never",val:""},
+    {label:"Today",days:0},
+    {label:"Tomorrow",days:1},
+    {label:"3 days",days:3},
+    {label:"1 month",days:30},
+    {label:"3 months",days:90},
+    {label:"6 months",days:180},
+    {label:"1 year",days:365},
+    {label:"📅 Custom",custom:true}
+  ];
+
+  // Get date string for N days from today (YYYY-MM-DD)
+  function daysToDate(days){
+    const d=new Date();
+    d.setDate(d.getDate()+days);
+    const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,"0"),dd=String(d.getDate()).padStart(2,"0");
+    return y+"-"+m+"-"+dd;
+  }
+
+  // Which chip is currently selected given expiry string?
+  function matchChip(val){
+    if(!val)return"";
+    // Check against each preset
+    for(const opt of OPTIONS){
+      if(opt.days!==undefined){
+        if(daysToDate(opt.days)===val)return"d"+opt.days;
+      }
+    }
+    return"custom";
+  }
+
+  // Build chips HTML for a container
+  function buildChips(containerId,hiddenInputId,customInputId){
+    const cont=document.getElementById(containerId);
+    const hidden=document.getElementById(hiddenInputId);
+    const custom=document.getElementById(customInputId);
+    if(!cont||!hidden)return;
+
+    let val=hidden.value||"";
+    let matched=matchChip(val);
+
+    let html="";
+    OPTIONS.forEach(opt=>{
+      const key=opt.custom?"custom":"d"+opt.days;
+      const on=matched===key?"on":"";
+      const cls=opt.custom?"expiry-chip custom-chip":"expiry-chip";
+      html+=`<div class="${cls} ${on}" data-key="${key}" data-val="${opt.custom?"custom":(opt.days!==undefined?daysToDate(opt.days):"")}">${opt.label}</div>`;
+    });
+    cont.innerHTML=html;
+
+    // Show/hide custom input
+    if(matched==="custom"&&custom){
+      if(customInputId&&document.getElementById(customInputId)){
+        const cw=document.getElementById(customInputId+"_wrap");
+        if(cw)cw.classList.add("on");
+      }
+    }
+
+    // Bind chip clicks
+    cont.querySelectorAll(".expiry-chip").forEach(chip=>{
+      chip.addEventListener("click",()=>{
+        const key=chip.getAttribute("data-key");
+        const val=chip.getAttribute("data-val");
+        cont.querySelectorAll(".expiry-chip").forEach(c=>c.classList.remove("on"));
+        chip.classList.add("on");
+
+        if(val==="custom"){
+          // Show custom date input
+          if(custom){
+            if(customInputId){
+              const cw=document.getElementById(customInputId+"_wrap");
+              if(cw)cw.classList.add("on");
+            }
+            custom.focus();
+            if(hidden)hidden.value=custom.value||"";
+          }
+        }else{
+          // Set hidden input to date
+          if(hidden)hidden.value=val;
+          if(custom){
+            if(customInputId){
+              const cw=document.getElementById(customInputId+"_wrap");
+              if(cw)cw.classList.remove("on");
+            }
+          }
+        }
+      });
+    });
+  }
+
+  // Custom date input change → update hidden
+  function bindCustom(customInputId,hiddenInputId){
+    const custom=document.getElementById(customInputId);
+    const hidden=document.getElementById(hiddenInputId);
+    if(!custom||!hidden)return;
+    custom.addEventListener("input",()=>{
+      hidden.value=custom.value||"";
+    });
+  }
+
+  // Transform original date input → chips
+  function transformInput(origInputId,containerId,hiddenId){
+    const orig=document.getElementById(origInputId);
+    if(!orig)return;
+    // Already transformed?
+    if(document.getElementById(containerId))return;
+
+    // Hide original input
+    orig.style.display="none";
+
+    // Create container for chips
+    const wrap=document.createElement("div");
+    wrap.innerHTML=`<div class="expiry-chips" id="${containerId}"></div><div class="expiry-custom-wrap" id="${origInputId}_wrap"><input type="date" id="${origInputId}_custom" style="width:100%;padding:10px 12px;background:var(--glass);border:1px solid var(--glass-bd);border-radius:10px;color:var(--tx);font-size:14px;font-family:inherit;outline:none"></div>`;
+    orig.parentElement.insertBefore(wrap,orig);
+    // Rename original input id to hidden, use it as hidden field
+    orig.id=hiddenId;
+    orig.type="hidden";
+    // Create new custom input
+    // (we'll use the one we created above)
+
+    buildChips(containerId,hiddenId,origInputId+"_custom");
+    bindCustom(origInputId+"_custom",hiddenId);
+  }
+
+  // Hook — after opening edit/add modals, transform inputs
+  function transformAll(){
+    // Link add
+    transformInput("expiryInput","expiryInput_chips","expiryInput_hidden");
+    // Note add
+    transformInput("noteExpiryInput","noteExpiryInput_chips","noteExpiryInput_hidden");
+    // Edit modal
+    transformInput("eExp","eExp_chips","eExp_hidden");
+  }
+
+  // Since edit modal is created dynamically, we need to observe
+  const mo=new MutationObserver(()=>{
+    transformAll();
+  });
+  mo.observe(document.body,{childList:true,subtree:true});
+
+  // Also transform at start
+  setTimeout(transformAll,500);
+
+  // Expose helper for later
+  window.__rebuildExpiryChips=function(){
+    if(document.getElementById("expiryInput_chips")){
+      const h=document.getElementById("expiryInput_hidden")||document.getElementById("expiryInput");
+      buildChips("expiryInput_chips",h.id,"expiryInput_custom");
+    }
+    if(document.getElementById("noteExpiryInput_chips")){
+      const h=document.getElementById("noteExpiryInput_hidden")||document.getElementById("noteExpiryInput");
+      buildChips("noteExpiryInput_chips",h.id,"noteExpiryInput_custom");
+    }
+    if(document.getElementById("eExp_chips")){
+      const h=document.getElementById("eExp_hidden")||document.getElementById("eExp");
+      buildChips("eExp_chips",h.id,"eExp_custom");
+    }
+  };
+
+  console.log("Expiry chips ready");
+})();
+</script>
 </body>
 </html>
