@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Firebase Test — Notes Manager</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    min-height: 100vh;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .card {
+    background: rgba(255,255,255,0.95);
+    backdrop-filter: blur(20px);
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    padding: 32px;
+    max-width: 720px;
+    width: 100%;
+  }
+  h1 {
+    font-size: 24px;
+    color: #172033;
+    margin-bottom: 6px;
+  }
+  .sub {
+    color: #697386;
+    font-size: 13px;
+    margin-bottom: 24px;
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin: 4px 4px 4px 0;
+  }
+  .btn-primary { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; }
+  .btn-success { background: linear-gradient(135deg, #10b981, #059669); color: white; }
+  .btn-danger  { background: linear-gradient(135deg, #ef4444, #dc2626); color: white; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn:not(:disabled):hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.2); }
+
+  .log {
+    background: #0f172a;
+    color: #e2e8f0;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    padding: 16px;
+    border-radius: 10px;
+    max-height: 320px;
+    overflow-y: auto;
+    margin-top: 16px;
+    line-height: 1.6;
+  }
+  .log .ok   { color: #4ade80; }
+  .log .err  { color: #f87171; }
+  .log .info { color: #60a5fa; }
+  .log .warn { color: #fbbf24; }
+  .log .time { color: #94a3b8; }
+
+  .status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    background: #f8fafc;
+    border: 1px solid #dfe4ec;
+    border-radius: 8px;
+    font-size: 13px;
+    margin-bottom: 16px;
+  }
+  .dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: #94a3b8;
+  }
+  .dot.green { background: #22c55e; box-shadow: 0 0 0 4px rgba(34,197,94,0.2); }
+  .dot.red   { background: #dc2626; box-shadow: 0 0 0 4px rgba(220,38,38,0.2); }
+  .dot.amber { background: #f59e0b; box-shadow: 0 0 0 4px rgba(245,158,11,0.2); }
+
+  .section {
+    border-top: 1px solid #dfe4ec;
+    margin-top: 20px;
+    padding-top: 16px;
+  }
+  .section-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: #697386;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 10px;
+  }
+  .user-info {
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 8px;
+    padding: 12px;
+    font-size: 12px;
+    color: #1e40af;
+    margin-bottom: 12px;
+    display: none;
+  }
+  .user-info.show { display: block; }
+  .user-info strong { color: #1e3a8a; }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <h1>🔥 Firebase Test</h1>
+  <div class="sub">Verify Firebase Auth + Firestore + Storage before integration</div>
+
+  <!-- Status bar -->
+  <div class="status">
+    <span class="dot" id="statusDot"></span>
+    <span id="statusText">Checking Firebase...</span>
+  </div>
+
+  <!-- User info -->
+  <div class="user-info" id="userInfo">
+    <div><strong>Email:</strong> <span id="uEmail">—</span></div>
+    <div><strong>Name:</strong> <span id="uName">—</span></div>
+    <div><strong>UID:</strong> <span id="uUid">—</span></div>
+  </div>
+
+  <!-- Buttons -->
+  <div>
+    <button class="btn btn-primary" id="btnSignIn" onclick="testSignIn()">🔐 Sign in with Google</button>
+    <button class="btn btn-success" id="btnFirestore" onclick="testFirestore()" disabled>📝 Test Firestore</button>
+    <button class="btn btn-success" id="btnStorage" onclick="testStorage()" disabled>📎 Test Storage Upload</button>
+    <button class="btn btn-danger"  id="btnSignOut" onclick="testSignOut()" disabled>🚪 Sign Out</button>
+  </div>
+
+  <!-- Log -->
+  <div class="section">
+    <div class="section-title">Console Log</div>
+    <div class="log" id="log"></div>
+  </div>
+</div>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+
+<script>
+// ============================================================
+// CONFIG — aapki values already bhari hui hain
+// ============================================================
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyA9YOnNztd4H_dnXt6eRpHsnxFxMY4EYPE",
+  authDomain: "notes-manager-83c48.firebaseapp.com",
+  projectId: "notes-manager-83c48",
+  storageBucket: "notes-manager-83c48.firebasestorage.app",
+  messagingSenderId: "6098539102",
+  appId: "1:6098539102:web:79c4bb84d458dbc82f5acf"
+};
+
+// ============================================================
+// LOGGING HELPERS
+// ============================================================
+function log(msg, type) {
+  type = type || "info";
+  const el = document.getElementById("log");
+  const t = new Date().toLocaleTimeString();
+  const span = document.createElement("div");
+  span.innerHTML = '<span class="time">[' + t + ']</span> <span class="' + type + '">' + escapeHtml(msg) + '</span>';
+  el.appendChild(span);
+  el.scrollTop = el.scrollHeight;
+}
+function escapeHtml(s) {
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+function setStatus(text, color) {
+  document.getElementById("statusText").textContent = text;
+  const dot = document.getElementById("statusDot");
+  dot.className = "dot " + (color || "");
+}
+
+// ============================================================
+// INITIALIZE FIREBASE
+// ============================================================
+let auth, firestore, storage, googleProvider;
+
+try {
+  firebase.initializeApp(FIREBASE_CONFIG);
+  auth = firebase.auth();
+  firestore = firebase.firestore();
+  storage = firebase.storage();
+  googleProvider = new firebase.auth.GoogleAuthProvider();
+
+  setStatus("Firebase initialized ✅", "green");
+  log("Firebase SDK loaded successfully", "ok");
+  log("Project: " + FIREBASE_CONFIG.projectId, "info");
+  log("Storage bucket: " + FIREBASE_CONFIG.storageBucket, "info");
+} catch (e) {
+  setStatus("Firebase init failed ❌", "red");
+  log("Init error: " + e.message, "err");
+}
+
+// ============================================================
+// AUTH STATE LISTENER
+// ============================================================
+auth.onAuthStateChanged(function(user) {
+  if (user) {
+    log("User signed in: " + user.email, "ok");
+    setStatus("Signed in as " + user.email, "green");
+
+    document.getElementById("userInfo").classList.add("show");
+    document.getElementById("uEmail").textContent = user.email;
+    document.getElementById("uName").textContent = user.displayName || "—";
+    document.getElementById("uUid").textContent = user.uid;
+
+    document.getElementById("btnSignIn").disabled = true;
+    document.getElementById("btnFirestore").disabled = false;
+    document.getElementById("btnStorage").disabled = false;
+    document.getElementById("btnSignOut").disabled = false;
+  } else {
+    log("User signed out", "warn");
+    setStatus("Not signed in", "amber");
+
+    document.getElementById("userInfo").classList.remove("show");
+    document.getElementById("btnSignIn").disabled = false;
+    document.getElementById("btnFirestore").disabled = true;
+    document.getElementById("btnStorage").disabled = true;
+    document.getElementById("btnSignOut").disabled = true;
+  }
+});
+
+// ============================================================
+// TEST 1: SIGN IN
+// ============================================================
+async function testSignIn() {
+  try {
+    log("Opening Google sign-in popup...", "info");
+    const result = await auth.signInWithPopup(googleProvider);
+    log("✅ Sign-in success: " + result.user.email, "ok");
+  } catch (err) {
+    log("❌ Sign-in failed: " + err.code + " — " + err.message, "err");
+    if (err.code === "auth/unauthorized-domain") {
+      log("👉 Firebase Console → Authentication → Settings → Authorized domains mein 'localhost' add karo", "warn");
+    }
+    if (err.code === "auth/popup-blocked") {
+      log("👉 Browser popups allow karo", "warn");
+    }
+  }
+}
+
+// ============================================================
+// TEST 2: FIRESTORE WRITE + READ
+// ============================================================
+async function testFirestore() {
+  const user = auth.currentUser;
+  if (!user) { log("Sign in first", "err"); return; }
+
+  try {
+    log("Writing test doc to Firestore...", "info");
+
+    const testData = {
+      message: "Hello from test page",
+      timestamp: new Date().toISOString(),
+      userEmail: user.email,
+      counter: Math.floor(Math.random() * 1000)
+    };
+
+    // WRITE
+    await firestore
+      .collection("users").doc(user.uid)
+      .collection("test").doc("hello")
+      .set(testData);
+    log("✅ Firestore WRITE success", "ok");
+
+    // READ
+    log("Reading back from Firestore...", "info");
+    const snap = await firestore
+      .collection("users").doc(user.uid)
+      .collection("test").doc("hello")
+      .get();
+
+    if (snap.exists) {
+      const data = snap.data();
+      log("✅ Firestore READ success: " + JSON.stringify(data), "ok");
+      log("   Message: " + data.message + " | Counter: " + data.counter, "ok");
+    } else {
+      log("❌ Doc not found after write", "err");
+    }
+
+  } catch (err) {
+    log("❌ Firestore failed: " + err.code + " — " + err.message, "err");
+    if (err.code === "permission-denied") {
+      log("👉 Firestore Rules check karo — STEP 3 ka rules paste kiya?", "warn");
+    }
+  }
+}
+
+// ============================================================
+// TEST 3: STORAGE UPLOAD + DOWNLOAD
+// ============================================================
+async function testStorage() {
+  const user = auth.currentUser;
+  if (!user) { log("Sign in first", "err"); return; }
+
+  try {
+    log("Creating test file (text blob)...", "info");
+
+    const content = "Firebase Storage Test\nUser: " + user.email + "\nTime: " + new Date().toISOString();
+    const blob = new Blob([content], { type: "text/plain" });
+
+    const path = "users/" + user.uid + "/test/hello_" + Date.now() + ".txt";
+    log("Uploading to: " + path, "info");
+
+    // UPLOAD
+    const snap = await storage.ref(path).put(blob);
+    log("✅ Storage UPLOAD success", "ok");
+
+    // GET URL
+    const url = await snap.ref.getDownloadURL();
+    log("✅ Download URL: " + url.substring(0, 80) + "...", "ok");
+
+    // DOWNLOAD to verify
+    log("Verifying by downloading...", "info");
+    const response = await fetch(url);
+    const text = await response.text();
+    log("✅ Storage DOWNLOAD success. Content: " + text.substring(0, 50), "ok");
+
+    // LIST FILES
+    log("Listing files in folder...", "info");
+    const listRef = storage.ref("users/" + user.uid + "/test");
+    const res = await listRef.listAll();
+    log("✅ Files in folder: " + res.items.length, "ok");
+
+    // CLEANUP (delete test file)
+    log("Cleaning up test file...", "info");
+    await snap.ref.delete();
+    log("✅ Cleanup done", "ok");
+
+  } catch (err) {
+    log("❌ Storage failed: " + err.code + " — " + err.message, "err");
+    if (err.code === "storage/unauthorized") {
+      log("👉 Storage Rules check karo — STEP 4B ka rules paste kiya?", "warn");
+    }
+    if (err.code === "storage/unknown" || err.message.includes("404")) {
+      log("👉 Storage bucket name check karo — 'firebasestorage.app' ya 'appspot.com'?", "warn");
+    }
+  }
+}
+
+// ============================================================
+// TEST 4: SIGN OUT
+// ============================================================
+async function testSignOut() {
+  try {
+    await auth.signOut();
+    log("Signed out", "ok");
+  } catch (err) {
+    log("Sign out failed: " + err.message, "err");
+  }
+}
+
+// ============================================================
+// AUTO-RUN INITIAL STATUS LOG
+// ============================================================
+log("Test page ready. Click 'Sign in with Google' to begin.", "info");
+</script>
+
+</body>
+</html>
