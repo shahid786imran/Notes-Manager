@@ -4062,5 +4062,56 @@ setTimeout(()=>{
   display:none!important;
 }
 </style>
+<script>
+// ═══════════════════════════════════════════════
+// CLEAR VIEW BUTTON FIX — Reliable Override
+// ═══════════════════════════════════════════════
+(function(){
+  function doClearView(){
+    try{
+      // Direct clear all filters
+      if(typeof currentFilter!=="undefined")currentFilter="all";
+      if(typeof currentFilterLabel!=="undefined")currentFilterLabel="";
+      if(typeof currentFolder!=="undefined")currentFolder="all";
+      if(typeof currentFolderLabel!=="undefined")currentFolderLabel="All Cards";
+      
+      // Update FAB
+      const fab=document.getElementById("fab");
+      if(fab)fab.classList.remove("has-filter");
+      const label=document.getElementById("fabFilterLabel");
+      if(label)label.textContent="";
+      
+      // Save + re-render
+      if(typeof save==="function")save();
+      if(typeof render==="function")render();
+      if(typeof renderSmartSuggestion==="function")renderSmartSuggestion();
+      if(typeof haptic==="function")haptic(10);
+      if(typeof toast==="function")toast("✓ View cleared");
+      
+      // Scroll top
+      window.scrollTo({top:0,behavior:"smooth"});
+    }catch(err){
+      console.error("Clear view error:",err);
+      // Fallback — reload page
+      location.reload();
+    }
+  }
+  
+  // Capture clicks on "Clear View" button BEFORE anything else
+  document.addEventListener("click",function(e){
+    if(!e.target||!e.target.classList)return;
+    const btn=e.target.closest("button");
+    if(!btn)return;
+    const txt=(btn.textContent||"").trim();
+    // Match button text
+    if(btn.classList.contains("ep-btn")&&txt==="Clear View"){
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      doClearView();
+    }
+  },true);  // ← true = capture phase (fires first)
+})();
+</script>
 </body>
 </html>
