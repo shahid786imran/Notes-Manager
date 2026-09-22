@@ -4113,5 +4113,101 @@ setTimeout(()=>{
   },true);  // ← true = capture phase (fires first)
 })();
 </script>
+   <style>
+/* ═══ Arrow chota + background hatana ═══ */
+.hh .cx{
+  width:18px!important;
+  height:18px!important;
+  min-width:18px!important;
+  font-size:11px!important;
+  background:none!important;
+  border:none!important;
+  box-shadow:none!important;
+  padding:0!important;
+  margin:0!important;
+  color:var(--mt)!important;
+  opacity:.65;
+  transition:transform .3s ease,opacity .2s ease!important;
+}
+.hh .cx:hover{opacity:1}
+.hh .cx.rot{transform:rotate(90deg)!important}
+
+/* Title par clickable cursor */
+.hh h2{cursor:pointer;user-select:none}
+</style>
+
+<script>
+// ═══ Poori header/title par click → expand/collapse ═══
+(function(){
+  document.addEventListener("click",function(e){
+    // Agar kisi button/chk/link par click hua to skip
+    if(e.target.closest("button,.chk,a,input,textarea,.ac,.ud-btns"))return;
+    
+    // Card header dhundo
+    const hh=e.target.closest(".hh");
+    if(!hh)return;
+    
+    // Card id nikalo parent se
+    const card=hh.closest(".card");
+    if(!card)return;
+    const flipId=card.getAttribute("data-flipid");
+    if(!flipId||!flipId.startsWith("c-"))return;
+    const id=parseInt(flipId.substring(2));
+    
+    // Collapse toggle karo
+    if(typeof toggleCollapse==="function"){
+      e.preventDefault();
+      toggleCollapse(id);
+      if(typeof haptic==="function")haptic(8);
+    }
+  },true);
+  
+  // Header card (Link) ka expand nahi hota — us par kuch na karo
+})();
+</script>
+   <style>
+/* ═══ List items ke icons ka background hatao ═══ */
+.rw .ic{
+  background:none!important;
+  border:none!important;
+  box-shadow:none!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+  width:24px!important;
+  height:24px!important;
+  min-width:24px!important;
+  font-size:18px!important;
+  border-radius:0!important;
+}
+
+/* Hover par bhi koi background na aaye */
+.rw:hover .ic{
+  background:none!important;
+  border:none!important;
+  transform:scale(1.15)!important;
+  border-color:transparent!important;
+}
+
+/* ═══ Header card ke icon ka bhi background hatao ═══ */
+.hcard .ic{
+  background:none!important;
+  border:none!important;
+  box-shadow:none!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+  width:28px!important;
+  height:28px!important;
+  min-width:28px!important;
+  font-size:22px!important;
+  border-radius:0!important;
+}
+
+.hcard:hover .ic{
+  background:none!important;
+  border:none!important;
+  transform:scale(1.15)!important;
+  border-color:transparent!important;
+}
+</style>
 </body>
 </html>
