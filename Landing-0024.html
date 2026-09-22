@@ -88,7 +88,7 @@ body.night::before{background:rgba(99,102,241,.3)}
 /* ═══════════════════════════════════════════════
    FOLDERS
    ═══════════════════════════════════════════════ */
-.folder-bar{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding:4px 0 12px;margin-bottom:6px}
+.folder-bar{display:none!important}
 .folder-bar::-webkit-scrollbar{display:none}
 .folder-chip{flex:none;display:flex;align-items:center;gap:6px;padding:8px 14px;background:var(--glass);border:1.5px solid var(--glass-bd);border-radius:99px;font-size:12.5px;font-weight:700;color:var(--tx);cursor:pointer;transition:.25s var(--e);white-space:nowrap;backdrop-filter:blur(10px);position:relative}
 .folder-chip:hover{transform:translateY(-2px)}
@@ -698,9 +698,6 @@ body.night .fd input,body.night .fd textarea,body.night .fd select{background:rg
 
 <!-- ═══ SMART SUGGESTION SLOT (Home) ═══ -->
 <div id="smartSuggestionSlot"></div>
-
-<!-- ═══ FOLDER BAR ═══ -->
-<div class="folder-bar" id="folderBar"></div>
 
 <!-- ═══ CARDS ═══ -->
 <div id="cards"></div>
@@ -1504,7 +1501,7 @@ window.loadFromFirebase=d=>{
     });
   });
   runAutoDelete();
-  render();updateFabFilter();renderFolderBar();renderSmartSuggestion();
+  render();updateFabFilter();renderSmartSuggestion();
 };
 
 /* ═══════════════════════════════════════════════════════════════
