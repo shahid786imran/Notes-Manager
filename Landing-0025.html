@@ -1466,10 +1466,109 @@ const openDupScan=()=>{const body=$("dupBody");body.innerHTML=`<div class="dup-s
 const dupCl=()=>$("dupOv").classList.remove("on");
 $("dupOv").onclick=e=>e.target.id==="dupOv"&&dupCl();
 const renderDuplicateResults=()=>{const body=$("dupBody");const groups=[];const map={};cards.forEach(c=>{if(!c.items)return;c.items.forEach(it=>{if(c.type==="link"&&it.url){const k=it.url.toLowerCase().trim();if(!map[k])map[k]=[];map[k].push({cardId:c.id,cardName:c.name,cardIcon:c.icon,item:it})}else if(c.type==="note"&&it.content){const k=it.content.toLowerCase().trim().substring(0,100);if(k.length<10)return;if(!map["n_"+k])map["n_"+k]=[];map["n_"+k].push({cardId:c.id,cardName:c.name,cardIcon:c.icon,item:it})}})});Object.keys(map).forEach(k=>{if(map[k].length>1)groups.push({key:k,items:map[k]})});duplicateGroups=groups;if(!groups.length){body.innerHTML='<div class="ep"><div class="bg">✅</div><div class="ep-title">No duplicates!</div><button class="ep-btn" onclick="dupCl()">Close</button></div>';return}let h=`<div style="font-size:13px;font-weight:800;color:var(--p);margin-bottom:12px">🧹 ${groups.length} duplicate group(s)</div>`;groups.forEach((g,gi)=>{const first=g.items[0];const title=first.item.url?first.item.url:(first.item.title||first.item.content.substring(0,40));h+=`<div class="dup-group"><div class="dg-header">${g.items.length} copies: ${esc(title)}</div>`;g.items.forEach(e=>{const time=fmtTime(e.item.updated||e.item.added);h+=`<div class="dg-item"><span>${e.cardIcon||"📁"}</span><span style="flex:1">${esc(e.cardName)}</span><span style="color:var(--mt);font-size:10px">${time}</span></div>`});h+=`<div class="dg-actions"><button class="keep" onclick="keepOldest(${gi})">Keep Oldest</button><button class="keep" onclick="keepNewest(${gi})">Keep Newest</button><button onclick="deleteAllDup(${gi})">Delete All</button></div></div>`});h+=`<button class="add-tag-btn" onclick="cleanAllDuplicates()">🧹 Clean All</button>`;body.innerHTML=h};
-window.keepOldest=gi=>{const g=duplicateGroups[gi];if(!g)return;const sorted=g.items.slice().sort((a,b)=>(a.item.added||0)-(b.item.added||0));const keep=sorted[0];sorted.slice(1).forEach(e=>{if(e.cardId===keep.cardId&&e.item.id===keep.item.id)return;const c=cards.find(x=>x.id===e.cardId);if(c){const idx=c.items.findIndex(it=>it.id===e.item.id);if(idx>=0){const[rm]=c.items.splice(idx,1);archive.unshift({id:'arc_'+Date.now()+'_'+Math.random().toString(36).slice(2,8),kind:'item',archivedAt:Date.now(),cardId:c.id,cardName:c.name,cardIcon:c.icon,cardType:c.type,originalIndex:idx,item:rm})}})};save();render();renderDuplicateResults();toast("🧹 Kept oldest")};
-window.keepNewest=gi=>{const g=duplicateGroups[gi];if(!g)return;const sorted=g.items.slice().sort((a,b)=>(b.item.added||0)-(a.item.added||0));const keep=sorted[0];sorted.slice(1).forEach(e=>{if(e.cardId===keep.cardId&&e.item.id===keep.item.id)return;const c=cards.find(x=>x.id===e.cardId);if(c){const idx=c.items.findIndex(it=>it.id===e.item.id);if(idx>=0){const[rm]=c.items.splice(idx,1);archive.unshift({id:'arc_'+Date.now()+'_'+Math.random().toString(36).slice(2,8),kind:'item',archivedAt:Date.now(),cardId:c.id,cardName:c.name,cardIcon:c.icon,cardType:c.type,originalIndex:idx,item:rm})}})};save();render();renderDuplicateResults();toast("🧹 Kept newest")};
-window.deleteAllDup=gi=>{const g=duplicateGroups[gi];if(!g)return;g.items.forEach(e=>{const c=cards.find(x=>x.id===e.cardId);if(c){const idx=c.items.findIndex(it=>it.id===e.item.id);if(idx>=0){const[rm]=c.items.splice(idx,1);archive.unshift({id:'arc_'+Date.now()+'_'+Math.random().toString(36).slice(2,8),kind:'item',archivedAt:Date.now(),cardId:c.id,cardName:c.name,cardIcon:c.icon,cardType:c.type,originalIndex:idx,item:rm})}}});save();render();renderDuplicateResults();toast("🗑 All archived")};
-window.cleanAllDuplicates=()=>{showConfirm("Clean All","Archive all duplicates?","🧹",()=>{duplicateGroups.forEach((g,gi)=>keepOldest(gi));save();render();dupCl();toast("🧹 Cleaned")})};
+window.keepOldest=function(gi){
+  var g=duplicateGroups[gi];
+  if(!g)return;
+  var sorted=g.items.slice().sort(function(a,b){
+    return (a.item.added||0)-(b.item.added||0);
+  });
+  var keep=sorted[0];
+  sorted.slice(1).forEach(function(e){
+    if(e.cardId===keep.cardId&&e.item.id===keep.item.id)return;
+    var c=cards.find(function(x){return x.id===e.cardId});
+    if(c){
+      var idx=c.items.findIndex(function(it){return it.id===e.item.id});
+      if(idx>=0){
+        var rm=c.items.splice(idx,1)[0];
+        archive.unshift({
+          id:'arc_'+Date.now()+'_'+Math.random().toString(36).slice(2,8),
+          kind:'item',
+          archivedAt:Date.now(),
+          cardId:c.id,
+          cardName:c.name,
+          cardIcon:c.icon,
+          cardType:c.type,
+          originalIndex:idx,
+          item:rm
+        });
+      }
+    }
+  });
+  save();
+  render();
+  renderDuplicateResults();
+  toast("Kept oldest");
+};
+window.keepNewest=function(gi){
+  var g=duplicateGroups[gi];
+  if(!g)return;
+  var sorted=g.items.slice().sort(function(a,b){
+    return (b.item.added||0)-(a.item.added||0);
+  });
+  var keep=sorted[0];
+  sorted.slice(1).forEach(function(e){
+    if(e.cardId===keep.cardId&&e.item.id===keep.item.id)return;
+    var c=cards.find(function(x){return x.id===e.cardId});
+    if(c){
+      var idx=c.items.findIndex(function(it){return it.id===e.item.id});
+      if(idx>=0){
+        var rm=c.items.splice(idx,1)[0];
+        archive.unshift({
+          id:'arc_'+Date.now()+'_'+Math.random().toString(36).slice(2,8),
+          kind:'item',
+          archivedAt:Date.now(),
+          cardId:c.id,
+          cardName:c.name,
+          cardIcon:c.icon,
+          cardType:c.type,
+          originalIndex:idx,
+          item:rm
+        });
+      }
+    }
+  });
+  save();
+  render();
+  renderDuplicateResults();
+  toast("Kept newest");
+};
+window.deleteAllDup=function(gi){
+  var g=duplicateGroups[gi];
+  if(!g)return;
+  g.items.forEach(function(e){
+    var c=cards.find(function(x){return x.id===e.cardId});
+    if(c){
+      var idx=c.items.findIndex(function(it){return it.id===e.item.id});
+      if(idx>=0){
+        var rm=c.items.splice(idx,1)[0];
+        archive.unshift({
+          id:'arc_'+Date.now()+'_'+Math.random().toString(36).slice(2,8),
+          kind:'item',
+          archivedAt:Date.now(),
+          cardId:c.id,
+          cardName:c.name,
+          cardIcon:c.icon,
+          cardType:c.type,
+          originalIndex:idx,
+          item:rm
+        });
+      }
+    }
+  });
+  save();
+  render();
+  renderDuplicateResults();
+  toast("All archived");
+};
+window.cleanAllDuplicates=function(){
+  showConfirm("Clean All","Archive all duplicates?","🧹",function(){
+    duplicateGroups.forEach(function(g,gi){keepOldest(gi)});
+    save();
+    render();
+    dupCl();
+    toast("Cleaned");
+  });
+};
 
 /* ═══ STATS ═══ */
 const openStats=()=>{const items=[{n:cards.length,l:"Total Cards"},{n:cards.filter(c=>c.type==="header").length,l:"Header"},{n:cards.filter(c=>c.type==="link").length,l:"Links"},{n:cards.filter(c=>c.type==="note").length,l:"Notes"},{n:cards.filter(c=>c.type==="link").reduce((s,c)=>s+c.items.length,0),l:"Total Links"},{n:cards.filter(c=>c.type==="note").reduce((s,c)=>s+c.items.length,0),l:"Total Notes"},{n:cards.filter(c=>c.pinned).length,l:"Pinned"},{n:cards.filter(c=>c.fav).length,l:"Favorites"},{n:archive.length,l:"Recycle Bin"},{n:folders.length,l:"Folders"},{n:getAllTags().length,l:"Tags"},{n:cards.reduce((s,c)=>s+(c.items?c.items.length:0),0),l:"Total Items"}];let h=items.map(i=>`<div class="stats-tile"><div class="st-num">${i.n}</div><div class="st-lbl">${i.l}</div></div>`).join("");const tagCounts={};cards.forEach(c=>{if(c.tag)tagCounts[c.tag]=(tagCounts[c.tag]||0)+1});const topTags=Object.entries(tagCounts).sort((a,b)=>b[1]-a[1]).slice(0,5);if(topTags.length){h+=`<div style="margin-top:16px"><div style="font-size:12px;font-weight:800;color:var(--p);margin-bottom:8px">🏷 Top Tags</div>`;const max=topTags[0][1];topTags.forEach(([tag,count])=>{const m=getTagMeta(tag);h+=`<div class="chart-row"><div class="cr-label">${m.icon} ${esc(m.label)}</div><div class="cr-bar"><div class="chart-bar" style="width:${(count/max*100).toFixed(1)}%"></div></div><div class="cr-val">${count}</div></div>`});h+=`</div>`}$("statsGrid").innerHTML=h;$("statsOv").classList.add("on")};
