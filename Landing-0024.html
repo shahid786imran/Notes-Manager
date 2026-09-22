@@ -5766,5 +5766,48 @@ body.night #cpmModal button[onclick*="cpmReset"]{background:#334155!important;co
   });
 })();
 </script>
+<script>
+// ═══════════════════════════════════════════════
+// FORCE LIST TO KEEP DEFAULT COLOR
+// Purana card-bg change wala code block karo
+// ═══════════════════════════════════════════════
+(function(){
+  function forceResetCardBg(){
+    const b=document.body;
+    const h=document.documentElement;
+    if(!b)return;
+    // Sirf list ka color reset — title color (--newHh-bg) safe rahe
+    if(b.style.getPropertyValue("--card-bg"))b.style.removeProperty("--card-bg");
+    if(b.style.getPropertyValue("--card-bd"))b.style.removeProperty("--card-bd");
+    if(h.style.getPropertyValue("--card-bg"))h.style.removeProperty("--card-bg");
+    if(h.style.getPropertyValue("--card-bd"))h.style.removeProperty("--card-bd");
+    // Purana cardColor state bhi clear karo
+    if(typeof window.cpColor!=="undefined")window.cpColor="";
+    if(typeof window.cardBgColor!=="undefined")window.cardBgColor="";
+    localStorage.removeItem("nm_cardBgColor");
+  }
+  
+  // Initial reset
+  forceResetCardBg();
+  
+  // Watch — har baar jab purana code `--card-bg` set kare, turant hata do
+  document.addEventListener("DOMContentLoaded",()=>{
+    const observer=new MutationObserver(forceResetCardBg);
+    if(document.body){
+      observer.observe(document.body,{attributes:true,attributeFilter:["style"]});
+    }
+    observer.observe(document.documentElement,{attributes:true,attributeFilter:["style"]});
+  });
+  
+  if(document.body){
+    const observer=new MutationObserver(forceResetCardBg);
+    observer.observe(document.body,{attributes:true,attributeFilter:["style"]});
+    observer.observe(document.documentElement,{attributes:true,attributeFilter:["style"]});
+  }
+  
+  // Fallback — har 800ms check karo
+  setInterval(forceResetCardBg,800);
+})();
+</script>
 </body>
 </html>
