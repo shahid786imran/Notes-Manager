@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Firebase Test</title>
+<style>
+body { font-family: -apple-system, sans-serif; padding: 20px; background: #f0f2f5; }
+.box { background: #fff; padding: 20px; border-radius: 12px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+.ok { color: #16a34a; font-weight: 700; }
+.err { color: #dc2626; font-weight: 700; }
+pre { background: #1e293b; color: #f1f5f9; padding: 12px; border-radius: 8px; font-size: 12px; overflow-x: auto; white-space: pre-wrap; word-break: break-all; }
+button { background: #6366f1; color: #fff; border: 0; padding: 12px 20px; border-radius: 8px; font-weight: 700; font-size: 14px; }
+</style>
+</head>
+<body>
+
+<h1>🔥 Firebase Test</h1>
+
+<div class="box">
+  <h3>Step 1: Auth</h3>
+  <div id="authStatus">Connecting...</div>
+</div>
+
+<div class="box">
+  <h3>Step 2: Firestore Read</h3>
+  <div id="readStatus">Waiting...</div>
+</div>
+
+<div class="box">
+  <h3>Step 3: Firestore Write</h3>
+  <div id="writeStatus">Waiting...</div>
+</div>
+
+<div class="box">
+  <h3>Logs</h3>
+  <pre id="log">Starting...</pre>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const config = {
+  apiKey: "AIzaSyASsp2ZuTigb13el83OSafe-kVbKcX8rGM",
+  authDomain: "notes-manager-fedd0.firebaseapp.com",
+  projectId: "notes-manager-fedd0",
+  storageBucket: "notes-manager-fedd0.firebasestorage.app",
+  messagingSenderId: "814688034472",
+  appId: "1:814688034472:web:227c5b1d9b3b22346a6c9d"
+};
+
+const EMAIL = "notemanager.app@gmail.com";
+const PASS = "NoteMgr@2026Secure";
+
+const $ = id => document.getElementById(id);
+let logText = "";
+function log(msg) {
+  console.log(msg);
+  logText += msg + "\n";
+  $("log").textContent = logText;
+}
+
+(async () => {
+  try {
+    log("1. Initializing Firebase...");
+    const app = initializeApp(config);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    log("   ✅ Firebase initialized");
+    log("   Project: " + config.projectId);
+
+    log("2. Signing in as " + EMAIL + "...");
+    let user;
+    try {
+      const cred = await signInWithEmailAndPassword(auth, EMAIL, PASS);
+      user = cred.user;
+      log("   ✅ Signed in: " + user.email);
+    } catch (e) {
+      log("   ⚠️  Sign-in failed: " + e.code);
+      if (e.code === "auth/user-not-found" || e.code === "auth/invalid-credential") {
+        log("   Creating account...");
+        const cred = await createUserWithEmailAndPassword(auth, EMAIL, PASS);
+        user = cred.user;
+        log("   ✅ Account created: " + user.email);
+      } else {
+        throw e;
+      }
+    }
+
+    $("authStatus").innerHTML = '<span class="ok">✅ Authenticated</span><br>UID: ' + user.uid;
+
+    log("3. Testing Firestore READ...");
+    try {
+      const ref = doc(db, "test_collection", user.uid);
+      const snap = await getDoc(ref);
+      log("   ✅ Read OK (exists: " + snap.exists() + ")");
+      $("readStatus").innerHTML = '<span class="ok">✅ Read OK</span>';
+    } catch (e) {
+      log("   ❌ Read failed: " + e.code + " - " + e.message);
+      $("readStatus").innerHTML = '<span class="err">❌ ' + e.code + '</span><br>' + e.message;
+    }
+
+    log("4. Testing Firestore WRITE...");
+    try {
+      const ref = doc(db, "test_collection", user.uid);
+      await setDoc(ref, { test: true, time: new Date().toISOString() }, { merge: true });
+      log("   ✅ Write OK");
+      $("writeStatus").innerHTML = '<span class="ok">✅ Write OK</span>';
+    } catch (e) {
+      log("   ❌ Write failed: " + e.code + " - " + e.message);
+      $("writeStatus").innerHTML = '<span class="err">❌ ' + e.code + '</span><br>' + e.message;
+    }
+
+    log("\n🎉 Test complete!");
+  } catch (e) {
+    log("\n❌ FATAL: " + e.message);
+    log("Code: " + (e.code || "unknown"));
+    showErr(e.message);
+  }
+})();
+</script>
+</body>
+</html>
