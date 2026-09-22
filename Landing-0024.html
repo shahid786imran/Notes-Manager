@@ -5487,5 +5487,284 @@ body.night #cpmModal button[onclick*="cpmReset"]{background:#334155!important;co
   }
 })();
 </script>
+<!-- ═══ HIDE OLD COLOR UI ═══ -->
+<style>
+#paintFab,
+.cp-settings-row,
+.cpm-settings-row,
+.card-appearance-section { display: none !important; }
+</style>
+
+<!-- ═══ NEW: CARD TITLE COLOR MODAL ═══ -->
+<div class="ov" id="newHhOv"><div class="pp">
+  <div class="pph">
+    <div class="title-wrap"><span>🎨 Card Title Color</span><span class="sub">Sirf title line ka rang</span></div>
+    <button onclick="newHhCl()">✕</button>
+  </div>
+  <div class="ppb">
+    <div class="fd">
+      <label>Title Line Color</label>
+      <div id="newHhGrid" style="display:grid;grid-template-columns:repeat(8,1fr);gap:8px"></div>
+    </div>
+
+    <div class="fd">
+      <label>Transparency <span id="newHhOpacityVal" style="color:var(--p);font-weight:800;text-transform:none">70%</span></label>
+      <input type="range" min="5" max="100" value="70" class="slider" id="newHhOpacitySlider" oninput="newHhSetOpacity(this.value)">
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--mt);font-weight:600;margin-top:4px">
+        <span>Transparent</span><span>Solid</span>
+      </div>
+    </div>
+
+    <div class="fd">
+      <label>Preview</label>
+      <div id="newHhPreview" style="border-radius:14px;border:1px solid var(--card-bd);overflow:hidden;background:var(--card-bg)">
+        <div id="newHhPreviewHeader" style="padding:12px 14px;display:flex;align-items:center;gap:10px;transition:.3s">
+          <span style="font-size:18px">📝</span>
+          <span style="font-weight:800;font-size:14px;flex:1">Sample Title</span>
+          <span style="font-size:10px;color:var(--mt);font-weight:700">2</span>
+          <span style="color:var(--p);font-size:11px">▶</span>
+        </div>
+        <div style="padding:10px 14px;font-size:11px;color:var(--mt)">Item row...</div>
+      </div>
+    </div>
+
+    <div class="fd">
+      <label>Presets</label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <button class="newHh-preset" onclick="newHhPreset('default')">Default</button>
+        <button class="newHh-preset" onclick="newHhPreset('subtle')">Subtle</button>
+        <button class="newHh-preset" onclick="newHhPreset('bold')">Bold</button>
+        <button class="newHh-preset" onclick="newHhPreset('glass')">Glass</button>
+      </div>
+    </div>
+  </div>
+  <div class="ppf">
+    <button onclick="newHhReset()">↺ Reset</button>
+    <button class="pr" onclick="newHhCl()">Done</button>
+  </div>
+</div></div>
+
+<style>
+.newHh-sw{
+  aspect-ratio:1;border-radius:10px;cursor:pointer;
+  border:3px solid transparent;transition:.15s;
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;color:#fff;font-weight:800;
+  box-shadow:0 2px 6px rgba(0,0,0,.12);
+}
+.newHh-sw:hover{transform:scale(1.1)}
+.newHh-sw.on{border-color:var(--p);box-shadow:0 0 0 3px rgba(99,102,241,.35)}
+.newHh-sw.reset-sw{background:var(--glass)!important;color:var(--mt);border:2px dashed var(--bd)}
+.newHh-sw.reset-sw.on{border-style:solid;border-color:var(--p)}
+.newHh-preset{
+  padding:11px;border-radius:10px;
+  background:var(--glass);border:1px solid var(--glass-bd);
+  color:var(--tx);font-weight:700;font-size:12px;
+  cursor:pointer;font-family:inherit;transition:.2s;
+}
+.newHh-preset:hover{background:rgba(99,102,241,.15);border-color:var(--p)}
+
+/* ═══ Apply color ONLY to .hh (card title line) ═══ */
+.hh{
+  background:var(--newHh-bg, linear-gradient(180deg, var(--row-tint), transparent))!important;
+  border-bottom:1px solid var(--newHh-bd, var(--bd))!important;
+}
+</style>
+
+<script>
+// ═══════════════════════════════════════════════
+// NEW CARD TITLE COLOR — Clean & Working
+// ═══════════════════════════════════════════════
+(function(){
+  const COLORS=[
+    {id:"",bg:""},
+    {id:"white",bg:"255,255,255"},
+    {id:"slate",bg:"100,116,139"},
+    {id:"red",bg:"239,68,68"},
+    {id:"orange",bg:"249,115,22"},
+    {id:"amber",bg:"245,158,11"},
+    {id:"yellow",bg:"234,179,8"},
+    {id:"lime",bg:"132,204,22"},
+    {id:"green",bg:"16,185,129"},
+    {id:"teal",bg:"20,184,166"},
+    {id:"cyan",bg:"6,182,212"},
+    {id:"blue",bg:"59,130,246"},
+    {id:"indigo",bg:"99,102,241"},
+    {id:"purple",bg:"139,92,246"},
+    {id:"pink",bg:"236,72,153"},
+    {id:"rose",bg:"244,63,94"}
+  ];
+
+  window.newHhColor=localStorage.getItem("nm_newHhColor")||"";
+  window.newHhOpacity=parseInt(localStorage.getItem("nm_newHhOpacity"))||70;
+
+  // ═══ APPLY to .hh only ═══
+  function apply(){
+    const root=document.documentElement;
+    const pal=COLORS.find(c=>c.id===window.newHhColor);
+    const isNight=document.body.classList.contains("night");
+
+    if(!pal||!pal.bg){
+      root.style.removeProperty("--newHh-bg");
+      root.style.removeProperty("--newHh-bd");
+    }else{
+      const a=window.newHhOpacity/100;
+      const alpha=isNight?Math.max(a,0.25):a;
+      root.style.setProperty("--newHh-bg",`rgba(${pal.bg},${alpha.toFixed(2)})`);
+      root.style.setProperty("--newHh-bd",`rgba(${pal.bg},${Math.min(1,alpha+0.15).toFixed(2)})`);
+    }
+    updatePreview();
+  }
+
+  function updatePreview(){
+    const hdr=document.getElementById("newHhPreviewHeader");
+    if(!hdr)return;
+    const pal=COLORS.find(c=>c.id===window.newHhColor);
+    const isNight=document.body.classList.contains("night");
+    if(!pal||!pal.bg){
+      hdr.style.background="";
+      hdr.style.borderBottom="1px solid var(--bd)";
+    }else{
+      const a=window.newHhOpacity/100;
+      const alpha=isNight?Math.max(a,0.25):a;
+      hdr.style.background=`rgba(${pal.bg},${alpha.toFixed(2)})`;
+      hdr.style.borderBottom="none";
+    }
+  }
+
+  function buildGrid(){
+    const grid=document.getElementById("newHhGrid");
+    if(!grid)return;
+    grid.innerHTML=COLORS.map(c=>{
+      const on=window.newHhColor===c.id?"on":"";
+      if(!c.bg){
+        return `<div class="newHh-sw reset-sw ${on}" data-c="" title="Default">✕</div>`;
+      }
+      return `<div class="newHh-sw ${on}" data-c="${c.id}" style="background:rgb(${c.bg})" title="${c.id}"></div>`;
+    }).join("");
+    grid.querySelectorAll(".newHh-sw").forEach(el=>{
+      el.addEventListener("click",()=>{
+        window.newHhColor=el.getAttribute("data-c")||"";
+        localStorage.setItem("nm_newHhColor",window.newHhColor);
+        apply();buildGrid();
+      });
+    });
+  }
+
+  // ═══ PUBLIC ═══
+  window.newHhCl=function(){
+    const ov=document.getElementById("newHhOv");
+    if(ov)ov.classList.remove("on");
+    if(typeof toast==="function")toast("✓ Saved");
+  };
+
+  window.newHhSetOpacity=function(v){
+    window.newHhOpacity=parseInt(v);
+    localStorage.setItem("nm_newHhOpacity",v);
+    const el=document.getElementById("newHhOpacityVal");
+    if(el)el.textContent=v+"%";
+    apply();
+  };
+
+  window.newHhReset=function(){
+    window.newHhColor="";window.newHhOpacity=70;
+    localStorage.removeItem("nm_newHhColor");
+    localStorage.setItem("nm_newHhOpacity",70);
+    apply();buildGrid();
+    const s=document.getElementById("newHhOpacitySlider");
+    if(s)s.value=70;
+    const v=document.getElementById("newHhOpacityVal");
+    if(v)v.textContent="70%";
+    if(typeof toast==="function")toast("↺ Reset");
+  };
+
+  window.newHhPreset=function(type){
+    if(type==="default"){window.newHhColor="";window.newHhOpacity=70}
+    else if(type==="subtle"){window.newHhColor="indigo";window.newHhOpacity=20}
+    else if(type==="bold"){window.newHhColor="indigo";window.newHhOpacity=90}
+    else if(type==="glass"){window.newHhColor="white";window.newHhOpacity=25}
+    localStorage.setItem("nm_newHhColor",window.newHhColor);
+    localStorage.setItem("nm_newHhOpacity",window.newHhOpacity);
+    apply();buildGrid();
+    const s=document.getElementById("newHhOpacitySlider");
+    if(s)s.value=window.newHhOpacity;
+    const v=document.getElementById("newHhOpacityVal");
+    if(v)v.textContent=window.newHhOpacity+"%";
+    if(typeof toast==="function")toast("✨ "+type);
+  };
+
+  window.openNewHhPicker=function(){
+    buildGrid();
+    const s=document.getElementById("newHhOpacitySlider");
+    if(s)s.value=window.newHhOpacity;
+    const v=document.getElementById("newHhOpacityVal");
+    if(v)v.textContent=window.newHhOpacity+"%";
+    updatePreview();
+    const ov=document.getElementById("newHhOv");
+    if(ov)ov.classList.add("on");
+  };
+
+  // ═══ Inject row into Settings ═══
+  function injectRow(){
+    const body=document.querySelector("#setOv .ppb");
+    if(!body)return false;
+    if(body.querySelector(".new-hh-row"))return true;
+
+    const row=document.createElement("div");
+    row.className="setting-row new-hh-row";
+    row.innerHTML=`
+      <div class="sl"><div class="lb">🎨 Card title color</div><div class="sb">Sirf title line ka rang</div></div>
+      <button onclick="openNewHhPicker()" style="padding:9px 16px;border-radius:10px;background:linear-gradient(135deg,var(--p),var(--p2));color:#fff;font-weight:700;font-size:12px;font-family:inherit;border:0;cursor:pointer">Customize</button>
+    `;
+
+    // Insert in Appearance section (before Font size)
+    const fontRow=[...body.querySelectorAll(".setting-row")].find(r=>r.textContent.includes("Font size")&&!r.classList.contains("new-hh-row"));
+    if(fontRow){
+      fontRow.insertAdjacentElement("beforebegin",row);
+    }else{
+      const appearanceH3=[...body.querySelectorAll("h3")].find(h=>h.textContent.includes("Appearance"));
+      if(appearanceH3&&appearanceH3.parentElement)appearanceH3.parentElement.appendChild(row);
+      else body.appendChild(row);
+    }
+    return true;
+  }
+
+  // Watch settings modal
+  const mo=new MutationObserver(()=>{
+    const ov=document.getElementById("setOv");
+    if(ov&&ov.classList.contains("on"))setTimeout(injectRow,50);
+  });
+
+  function init(){
+    const ov=document.getElementById("setOv");
+    if(ov){
+      mo.observe(ov,{attributes:true,attributeFilter:["class"]});
+      if(ov.classList.contains("on"))injectRow();
+    }
+    apply();
+    buildGrid();
+  }
+
+  if(document.readyState==="loading"){
+    document.addEventListener("DOMContentLoaded",init);
+  }else{
+    init();
+  }
+
+  // Re-apply on theme change
+  const obs=new MutationObserver(()=>apply());
+  document.addEventListener("DOMContentLoaded",()=>{
+    if(document.body)obs.observe(document.body,{attributes:true,attributeFilter:["class"]});
+  });
+  if(document.body){
+    obs.observe(document.body,{attributes:true,attributeFilter:["class"]});
+  }
+
+  // Close on backdrop
+  document.addEventListener("click",e=>{
+    if(e.target&&e.target.id==="newHhOv")window.newHhCl();
+  });
+})();
+</script>
 </body>
 </html>
