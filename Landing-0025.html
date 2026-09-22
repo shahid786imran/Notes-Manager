@@ -1692,5 +1692,425 @@ window.saveToFirebase=async d=>{if(!window.firebaseUser)return;try{await setDoc(
 window.syncFromFirebase=async()=>{if(!window.firebaseUser)return false;try{const s=await getDoc(doc(db,"notes",window.firebaseUser.uid));if(s.exists()){window.loadFromFirebase(s.data());return true}}catch(e){console.error(e)}return false};
 setTimeout(()=>{const ls=document.getElementById("loadingScreen");if(ls&&!ls.classList.contains("hide")){console.warn("Timeout");hideLoadingScreen()}},8000);
 </script>
+<style>
+/* ═══ Arrow: chota, no background ═══ */
+.hh .cx{
+  width:18px!important;
+  height:18px!important;
+  min-width:18px!important;
+  padding:0!important;
+  font-size:11px!important;
+  background:none!important;
+  border:none!important;
+  box-shadow:none!important;
+  border-radius:0!important;
+  color:var(--mt)!important;
+  opacity:.65;
+  margin:0!important;
+}
+.hh .cx:hover{opacity:1}
+.hh .cx.rot{transform:rotate(90deg)!important}
+
+/* ═══ Title line pointer ═══ */
+.hh{cursor:pointer;user-select:none;-webkit-user-select:none}
+.hh h2{cursor:pointer;user-select:none;-webkit-user-select:none}
+</style>
+
+<script>
+// ═══════════════════════════════════════════════
+// TITLE CLICK → EXPAND/COLLAPSE
+// ═══════════════════════════════════════════════
+(function(){
+  // Ignore click if it's on these elements
+  function shouldIgnore(target){
+    if(!target||!target.closest)return true;
+    // Buttons, checkboxes, links, inputs
+    if(target.closest("button"))return true;
+    if(target.closest(".chk"))return true;
+    if(target.closest("a"))return true;
+    if(target.closest("input,textarea,select"))return true;
+    if(target.closest(".ac"))return true;
+    if(target.closest(".ud-btns"))return true;
+    return false;
+  }
+
+  // Track long-press to avoid conflict
+  let longPressDetected=false;
+  let pressStartX=0,pressStartY=0;
+
+  document.addEventListener("touchstart",function(e){
+    longPressDetected=false;
+    if(e.touches&&e.touches[0]){
+      pressStartX=e.touches[0].clientX;
+      pressStartY=e.touches[0].clientY;
+    }
+  },{passive:true,capture:true});
+
+  document.addEventListener("touchmove",function(e){
+    if(e.touches&&e.touches[0]){
+      const dx=Math.abs(e.touches[0].clientX-pressStartX);
+      const dy=Math.abs(e.touches[0].clientY-pressStartY);
+      if(dx>10||dy>10)longPressDetected=true;
+    }
+  },{passive:true,capture:true});
+
+  // Main click handler — capture phase
+  document.addEventListener("click",function(e){
+    // Skip if clicked on buttons or interactive elements
+    if(shouldIgnore(e.target))return;
+
+    // Find the card header
+    const hh=e.target.closest(".hh");
+    if(!hh)return;
+
+    // Find the card (parent .card element)
+    const card=hh.closest(".card");
+    if(!card)return;
+
+    // Get card ID from data-flipid
+    const flipId=card.getAttribute("data-flipid");
+    if(!flipId||!flipId.startsWith("c-"))return;
+    const id=parseInt(flipId.substring(2));
+    if(!id)return;
+
+    // Get the card object
+    const c=cards.find(x=>x.id===id);
+    if(!c)return;
+
+    // Header cards have no items — skip collapse
+    if(c.type==="header")return;
+
+    // If long-press was detected, don't toggle
+    if(longPressDetected){longPressDetected=false;return}
+
+    // Prevent any other action
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+
+    // Toggle collapse
+    if(typeof toggleCollapse==="function"){
+      toggleCollapse(id);
+      if(typeof haptic==="function")haptic(8);
+    }
+  },true);
+})();
+</script>
+<style>
+/* ═══ COMPACT LIST VIEW ═══ */
+body.list-compact .rw{
+  padding-top:calc(8px * var(--rowpad) * var(--rw-scale,1))!important;
+  padding-bottom:calc(8px * var(--rowpad) * var(--rw-scale,1))!important;
+}
+body.list-compact .rw .if{
+  display:flex!important;
+  align-items:baseline!important;
+  gap:10px!important;
+  min-width:0!important;
+  overflow:hidden!important;
+}
+body.list-compact .rw .t{
+  font-weight:800!important;
+  flex:none!important;
+  max-width:50%!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  margin:0!important;
+}
+body.list-compact .rw .u{
+  display:block!important;
+  margin:0!important;
+  flex:1!important;
+  min-width:0!important;
+  font-weight:400!important;
+  font-size:11.5px!important;
+  color:var(--mt)!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  opacity:.85;
+}
+body.list-compact .rw .t::after{
+  content:" · ";
+  color:var(--mt);
+  font-weight:400;
+  opacity:.5;
+  margin-left:2px;
+}
+body.list-compact .rw .ts{
+  font-size:10px!important;
+  margin-left:6px!important;
+  padding-left:6px!important;
+  flex:none!important;
+}
+body.list-compact .rw .ic{
+  width:20px!important;
+  height:20px!important;
+  min-width:20px!important;
+  font-size:16px!important;
+}
+</style>
+
+<script>
+// ═══════════════════════════════════════════════
+// LIST VIEW MODE — Expanded / Compact
+// ═══════════════════════════════════════════════
+(function(){
+  let listView=localStorage.getItem("nm_listView")||"expanded";
+
+  function applyListView(){
+    if(listView==="compact")document.body.classList.add("list-compact");
+    else document.body.classList.remove("list-compact");
+    // Sync UI
+    document.querySelectorAll("#listViewSeg button").forEach(b=>{
+      b.classList.toggle("on",b.dataset.v===listView);
+    });
+  }
+
+  window.setListView=function(v){
+    listView=v;
+    localStorage.setItem("nm_listView",v);
+    applyListView();
+    if(typeof toast==="function")toast(v==="compact"?"📋 Compact view":"📋 Expanded view");
+  };
+
+  // Inject setting row into Settings
+  function injectRow(){
+    const body=document.querySelector("#setOv .ppb");
+    if(!body)return false;
+    if(body.querySelector(".list-view-row"))return true;
+
+    const row=document.createElement("div");
+    row.className="setting-row flexcol list-view-row";
+    row.innerHTML=`
+      <div class="sl"><div class="lb">List view</div><div class="sb">Item rows layout</div></div>
+      <div class="seg" id="listViewSeg" style="width:100%">
+        <button data-v="expanded" onclick="setListView('expanded')">Expanded</button>
+        <button data-v="compact" onclick="setListView('compact')">Compact</button>
+      </div>
+    `;
+
+    // Insert in Display section (after "Show recent bar" row)
+    const rows=[...body.querySelectorAll(".setting-row")];
+    const targetRow=rows.find(r=>r.textContent.includes("Show recent bar")&&!r.classList.contains("list-view-row"));
+    if(targetRow){
+      targetRow.insertAdjacentElement("afterend",row);
+    }else{
+      // Fallback — insert in Appearance section
+      const appearanceH3=[...body.querySelectorAll("h3")].find(h=>h.textContent.includes("Display")||h.textContent.includes("Appearance"));
+      if(appearanceH3&&appearanceH3.parentElement)appearanceH3.parentElement.appendChild(row);
+      else body.appendChild(row);
+    }
+
+    applyListView();
+    return true;
+  }
+
+  // Watch settings modal open
+  const mo=new MutationObserver(()=>{
+    const ov=document.getElementById("setOv");
+    if(ov&&ov.classList.contains("on"))setTimeout(injectRow,50);
+  });
+
+  function init(){
+    const ov=document.getElementById("setOv");
+    if(ov){
+      mo.observe(ov,{attributes:true,attributeFilter:["class"]});
+      if(ov.classList.contains("on"))injectRow();
+    }
+    applyListView();
+  }
+
+  if(document.readyState==="loading"){
+    document.addEventListener("DOMContentLoaded",init);
+  }else{
+    init();
+  }
+})();
+</script>
+<script>
+// ═══════════════════════════════════════════════
+// EXPIRY FIXES — Date Input + Auto-Expire to Bin
+// ═══════════════════════════════════════════════
+(function(){
+
+  // ═══ FIX 1: Ensure expiry value shows in edit modal ═══
+  // Override editItem to normalize expiry format
+  const originalEditItem=window.editItem;
+  window.editItem=function(cid,iid){
+    const c=cards.find(x=>x.id===cid);
+    const it=c?c.items.find(x=>x.id===iid):null;
+    if(!it)return;
+    // Normalize expiry to YYYY-MM-DD for date input
+    if(it.expiry){
+      const d=new Date(it.expiry);
+      if(!isNaN(d.getTime())){
+        const yyyy=d.getFullYear();
+        const mm=String(d.getMonth()+1).padStart(2,"0");
+        const dd=String(d.getDate()).padStart(2,"0");
+        it.expiry=yyyy+"-"+mm+"-"+dd;
+      }
+    }
+    if(typeof originalEditItem==="function")originalEditItem(cid,iid);
+    // After modal renders, set the value again (in case)
+    setTimeout(()=>{
+      const inp=document.getElementById("eExp");
+      if(inp&&it.expiry)inp.value=it.expiry;
+    },100);
+  };
+
+  // ═══ FIX 2: Auto-expire items → move to bin ═══
+  function runExpiryCheck(){
+    const today=new Date();
+    today.setHours(0,0,0,0);
+    let changed=false;
+    let expiredCount=0;
+
+    cards.forEach(c=>{
+      if(!c.items||!c.items.length)return;
+      const remaining=[];
+      let cardChanged=false;
+      c.items.forEach(it=>{
+        if(it.expiry){
+          const exp=new Date(it.expiry);
+          if(!isNaN(exp.getTime())){
+            exp.setHours(0,0,0,0);
+            if(exp.getTime()<today.getTime()){
+              // Expired → archive
+              archive.unshift({
+                id:"arc_"+Date.now()+"_"+Math.random().toString(36).slice(2,8),
+                kind:"item",
+                archivedAt:Date.now(),
+                cardId:c.id,
+                cardName:c.name,
+                cardIcon:c.icon,
+                cardType:c.type,
+                originalIndex:c.items.indexOf(it),
+                item:Object.assign({},it,{expired:true})
+              });
+              changed=true;
+              cardChanged=true;
+              expiredCount++;
+              return;
+            }
+          }
+        }
+        remaining.push(it);
+      });
+      if(cardChanged){
+        c.items=remaining;
+        c.updated=Date.now();
+      }
+    });
+
+    if(changed){
+      if(typeof save==="function")save();
+      if(typeof render==="function")render();
+      if(typeof toast==="function")toast("⏰ "+expiredCount+" expired item"+(expiredCount!==1?"s":"")+" moved to Recycle Bin");
+      if(typeof haptic==="function")haptic(20);
+    }
+    return expiredCount;
+  }
+
+  window.runExpiryCheck=runExpiryCheck;
+
+  // Run on start (delayed to let app initialize)
+  setTimeout(runExpiryCheck,1500);
+
+  // Run every 30 minutes
+  setInterval(runExpiryCheck,30*60*1000);
+
+  // Also run when app becomes visible (user returns to tab)
+  document.addEventListener("visibilitychange",()=>{
+    if(!document.hidden)setTimeout(runExpiryCheck,500);
+  });
+
+  // Run when user sets an expiry (immediate check)
+  const originalESave=window.eSave;
+  if(typeof originalESave==="function"){
+    window.eSave=function(){
+      if(typeof originalESave==="function")originalESave();
+      setTimeout(runExpiryCheck,300);
+    };
+  }
+
+  const originalNSv=window.nSv;
+  if(typeof originalNSv==="function"){
+    window.nSv=function(){
+      if(typeof originalNSv==="function")originalNSv();
+      setTimeout(runExpiryCheck,300);
+    };
+  }
+
+  const originalSv=window.sv;
+  if(typeof originalSv==="function"){
+    window.sv=function(){
+      if(typeof originalSv==="function")originalSv();
+      setTimeout(runExpiryCheck,300);
+    };
+  }
+
+  console.log("Expiry auto-check active. Running every 30 min + on visibility.");
+})();
+</script>
+<style>
+/* ═══ Expiry Badge ═══ */
+.expiry-badge{
+  font-size:10px;
+  font-weight:700;
+  font-style:normal;
+  margin-right:6px;
+  padding:1px 6px;
+  border-radius:6px;
+  display:inline-block;
+  vertical-align:middle;
+  background:rgba(99,102,241,.08);
+  white-space:nowrap;
+  flex:none;
+  letter-spacing:.2px;
+}
+body.night .expiry-badge{background:rgba(255,255,255,.08)}
+body.list-compact .expiry-badge{margin-right:5px;font-size:9.5px}
+</style>
+
+<script>
+// ═══════════════════════════════════════════════
+// EXPIRY COUNTDOWN BADGE
+// ═══════════════════════════════════════════════
+window.fmtExpiry=function(ts){
+  if(!ts)return"";
+  const now=Date.now();
+  const exp=new Date(ts).getTime();
+  if(isNaN(exp))return"";
+  const diff=exp-now;
+  if(diff<=0)return"Expired";
+  const DAY=86400000;
+  if(diff<DAY)return"Today";
+  let d=Math.floor(diff/DAY);
+  const yr=Math.floor(d/365);
+  d-=yr*365;
+  const mo=Math.floor(d/30);
+  d-=mo*30;
+  const parts=[];
+  if(yr>0)parts.push(yr+" Yr");
+  if(mo>0)parts.push(mo+" Mo");
+  if(d>0)parts.push(d+" D");
+  return "Bin in "+(parts.join(", ")||"1 D");
+};
+
+window.getExpiryColor=function(ts){
+  if(!ts)return"var(--mt)";
+  const exp=new Date(ts).getTime();
+  if(isNaN(exp))return"var(--mt)";
+  const diff=exp-Date.now();
+  if(diff<=0)return"var(--dg)";           // Expired → red
+  const d=diff/86400000;
+  if(d<1)return"var(--dg)";               // Today → red
+  if(d<3)return"#f97316";                 // < 3 days → orange
+  if(d<7)return"#eab308";                 // < 1 week → yellow
+  return"var(--ok)";                      // 1 week+ → green
+};
+</script>
 </body>
 </html>
