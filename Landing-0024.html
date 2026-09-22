@@ -4209,5 +4209,240 @@ setTimeout(()=>{
   border-color:transparent!important;
 }
 </style>
+<script>
+// ═══════════════════════════════════════════════
+// CARD COLOR + TRANSPARENCY SETTINGS
+// ═══════════════════════════════════════════════
+(function(){
+  // Wait for settings modal to load
+  function injectSettingRows(){
+    const setBody=document.querySelector("#setOv .ppb");
+    if(!setBody)return false;
+    if(setBody.querySelector(".card-appearance-section"))return true;
+    
+    // Create new section
+    const section=document.createElement("div");
+    section.className="setting-section card-appearance-section";
+    section.innerHTML=`
+      <h3>🃏 Card Appearance</h3>
+      
+      <div class="setting-row flexcol">
+        <div class="sl"><div class="lb">Card background color</div><div class="sb">Choose a base color</div></div>
+        <div class="card-color-grid" id="cardBgColorGrid"></div>
+      </div>
+      
+      <div class="setting-row flexcol">
+        <div class="sl"><div class="lb">Card transparency <span id="cardOpacityVal">70%</span></div><div class="sb">Background see-through</div></div>
+        <input type="range" min="0" max="100" value="70" class="slider" id="cardOpacitySlider" oninput="setCardOpacity(this.value)">
+      </div>
+      
+      <div class="setting-row">
+        <div class="sl"><div class="lb">Blur effect</div><div class="sb">Glassmorphism</div></div>
+        <div class="switch on" id="swCardBlur" onclick="toggleSwitch('cardBlur')"></div>
+      </div>
+      
+      <div class="setting-row">
+        <div class="sl"><div class="lb">Reset to default</div></div>
+        <button style="padding:8px 14px;border-radius:10px;background:var(--glass);border:1px solid var(--glass-bd);color:var(--tx);font-weight:700;font-size:12px" onclick="resetCardAppearance()">↺ Reset</button>
+      </div>
+    `;
+    
+    // Insert before the last cred-line
+    const credLine=setBody.querySelector(".cred-line");
+    if(credLine)setBody.insertBefore(section,credLine);
+    else setBody.appendChild(section);
+    
+    return true;
+  }
+  
+  // Try inject on page load
+  if(!injectSettingRows()){
+    // Retry every 500ms until success
+    const iv=setInterval(()=>{
+      if(injectSettingRows())clearInterval(iv);
+    },500);
+    setTimeout(()=>clearInterval(iv),10000);
+  }
+  
+  // Add color grid styles
+  const style=document.createElement("style");
+  style.textContent=`
+    .card-color-grid{
+      display:flex;gap:8px;flex-wrap:wrap;padding:4px 0;
+    }
+    .card-color-opt{
+      width:36px;height:36px;border-radius:10px;cursor:pointer;
+      border:3px solid transparent;transition:.2s;
+      display:flex;align-items:center;justify-content:center;
+      font-size:14px;font-weight:800;color:#fff;
+      position:relative;
+    }
+    .card-color-opt:hover{transform:scale(1.1)}
+    .card-color-opt.on{border-color:var(--p);box-shadow:0 0 0 3px rgba(99,102,241,.3)}
+    .card-color-opt.reset{
+      background:transparent!important;
+      border:2px solid var(--bd);
+      color:var(--mt);
+      font-size:16px;
+    }
+    .card-color-opt.reset::after{content:"✕"}
+  `;
+  document.head.appendChild(style);
+})();
+
+// ═══ Card Background Color State ═══
+let cardBgColor=localStorage.getItem("nm_cardBgColor")||"";
+let cardBgOpacity=parseInt(localStorage.getItem("nm_cardBgOpacity"))||70;
+let cardBgBlur=localStorage.getItem("nm_cardBgBlur")!=="false";
+
+// Color palettes
+const cardColorPalettes=[
+  {id:"",label:"Default",bg:""},
+  {id:"white",label:"White",bg:"255,255,255"},
+  {id:"slate",label:"Slate",bg:"100,116,139"},
+  {id:"gray",label:"Gray",bg:"156,163,175"},
+  {id:"red",label:"Red",bg:"239,68,68"},
+  {id:"orange",label:"Orange",bg:"249,115,22"},
+  {id:"amber",label:"Amber",bg:"245,158,11"},
+  {id:"yellow",label:"Yellow",bg:"234,179,8"},
+  {id:"lime",label:"Lime",bg:"132,204,22"},
+  {id:"green",label:"Green",bg:"16,185,129"},
+  {id:"teal",label:"Teal",bg:"20,184,166"},
+  {id:"cyan",label:"Cyan",bg:"6,182,212"},
+  {id:"blue",label:"Blue",bg:"59,130,246"},
+  {id:"indigo",label:"Indigo",bg:"99,102,241"},
+  {id:"purple",label:"Purple",bg:"139,92,246"},
+  {id:"pink",label:"Pink",bg:"236,72,153"}
+];
+
+// Build color grid
+function buildCardColorGrid(){
+  const grid=document.getElementById("cardBgColorGrid");
+  if(!grid)return;
+  grid.innerHTML=cardColorPalettes.map(c=>{
+    if(!c.bg){
+      return `<div class="card-color-opt reset ${cardBgColor===""?"on":""}" onclick="setCardBgColor('')" title="${c.label}"></div>`;
+    }
+    const isOn=cardBgColor===c.id;
+    const rgb=c.bg;
+    const bgLight=`rgba(${rgb},.8)`;
+    const bgDark=`rgba(${rgb},.5)`;
+    return `<div class="card-color-opt ${isOn?'on':''}" style="background:linear-gradient(135deg,rgba(${rgb},1),rgba(${rgb},.7))" onclick="setCardBgColor('${c.id}')" title="${c.label}"></div>`;
+  }).join("");
+}
+
+// Set card background color
+window.setCardBgColor=(id)=>{
+  cardBgColor=id;
+  localStorage.setItem("nm_cardBgColor",id);
+  applyCardAppearance();
+  buildCardColorGrid();
+  if(typeof toast==="function")toast(id?"🎨 Color: "+id:"Color: default");
+};
+
+// Set opacity
+window.setCardOpacity=(v)=>{
+  cardBgOpacity=parseInt(v);
+  localStorage.setItem("nm_cardBgOpacity",v);
+  const el=document.getElementById("cardOpacityVal");
+  if(el)el.textContent=v+"%";
+  applyCardAppearance();
+};
+
+// Apply card appearance (colors + opacity)
+function applyCardAppearance(){
+  const root=document.documentElement;
+  
+  // Get current theme mode
+  const isNight=document.body.classList.contains("night");
+  
+  // Find palette
+  const palette=cardColorPalettes.find(c=>c.id===cardBgColor);
+  const alpha=cardBgOpacity/100;
+  
+  if(!palette||!palette.bg){
+    // Default — remove overrides
+    root.style.removeProperty("--card-bg");
+    root.style.removeProperty("--card-bd");
+  }else{
+    const rgb=palette.bg;
+    // Light mode: rgba with slight transparency
+    const bgLight=`rgba(${rgb},${(alpha*0.85).toFixed(2)})`;
+    const bdLight=`rgba(${rgb},${Math.min(1,alpha*0.95).toFixed(2)})`;
+    // Dark mode: same but darker
+    if(isNight){
+      root.style.setProperty("--card-bg",`rgba(${rgb},${(alpha*0.35).toFixed(2)})`);
+      root.style.setProperty("--card-bd",`rgba(${rgb},${(alpha*0.5).toFixed(2)})`);
+    }else{
+      root.style.setProperty("--card-bg",bgLight);
+      root.style.setProperty("--card-bd",bdLight);
+    }
+  }
+  
+  // Blur toggle
+  if(cardBgBlur){
+    root.style.removeProperty("--card-blur");
+  }else{
+    root.style.setProperty("--card-blur","none");
+  }
+}
+
+// Blur toggle — extend existing toggleSwitch
+const originalToggleSwitch=window.toggleSwitch;
+window.toggleSwitch=function(key){
+  if(key==="cardBlur"){
+    cardBgBlur=!cardBgBlur;
+    localStorage.setItem("nm_cardBgBlur",cardBgBlur?"true":"false");
+    const sw=document.getElementById("swCardBlur");
+    if(sw)sw.classList.toggle("on",cardBgBlur);
+    applyCardAppearance();
+    if(typeof toast==="function")toast(cardBgBlur?"Blur ON":"Blur OFF");
+    return;
+  }
+  if(typeof originalToggleSwitch==="function")originalToggleSwitch(key);
+};
+
+// Reset
+window.resetCardAppearance=()=>{
+  cardBgColor="";
+  cardBgOpacity=70;
+  cardBgBlur=true;
+  localStorage.removeItem("nm_cardBgColor");
+  localStorage.setItem("nm_cardBgOpacity",70);
+  localStorage.setItem("nm_cardBgBlur","true");
+  applyCardAppearance();
+  buildCardColorGrid();
+  const slider=document.getElementById("cardOpacitySlider");
+  if(slider)slider.value=70;
+  const val=document.getElementById("cardOpacityVal");
+  if(val)val.textContent="70%";
+  const sw=document.getElementById("swCardBlur");
+  if(sw)sw.classList.add("on");
+  if(typeof toast==="function")toast("↺ Reset to default");
+};
+
+// Hook into openSettings to build grid
+const originalOpenSettings=window.openSettings;
+window.openSettings=function(){
+  if(typeof originalOpenSettings==="function")originalOpenSettings();
+  setTimeout(()=>{
+    buildCardColorGrid();
+    const slider=document.getElementById("cardOpacitySlider");
+    if(slider)slider.value=cardBgOpacity;
+    const val=document.getElementById("cardOpacityVal");
+    if(val)val.textContent=cardBgOpacity+"%";
+    const sw=document.getElementById("swCardBlur");
+    if(sw)sw.classList.toggle("on",cardBgBlur);
+  },100);
+};
+
+// Apply on load
+setTimeout(()=>{
+  applyCardAppearance();
+  // Re-apply on theme change
+  const observer=new MutationObserver(()=>applyCardAppearance());
+  observer.observe(document.body,{attributes:true,attributeFilter:["class"]});
+},500);
+</script>
 </body>
 </html>
