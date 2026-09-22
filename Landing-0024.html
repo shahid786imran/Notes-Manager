@@ -292,6 +292,7 @@ body.night .sheet{background:linear-gradient(180deg,rgba(30,41,59,.95),rgba(49,4
 .sheet-item.search .si-ic{background:linear-gradient(135deg,#06b6d4,#0891b2)}
 .sheet-item.stats .si-ic{background:linear-gradient(135deg,#ec4899,#be185d)}
 .sheet-item.settings .si-ic{background:linear-gradient(135deg,#0ea5e9,#0284c7)}
+.sheet-item.folders .si-ic{background:linear-gradient(135deg,#6366f1,#8b5cf6)}   
 .sheet-item.health .si-ic{background:linear-gradient(135deg,#10b981,#047857)}
 .sheet-item.dups .si-ic{background:linear-gradient(135deg,#f43f5e,#be123c)}
 .sheet-item .si-txt{flex:1}
@@ -715,6 +716,7 @@ body.night .fd input,body.night .fd textarea,body.night .fd select{background:rg
       <button class="sheet-item theme" onclick="sheetAction('theme')"><span class="si-ic">🌙</span><span class="si-txt">Theme<div class="si-sub">Light / Dark</div></span><span class="si-arrow">›</span></button>
       <button class="sheet-item archive" onclick="sheetAction('archive')"><span class="si-ic">🗄</span><span class="si-txt">Recycle Bin<div class="si-sub">View deleted items</div></span><span class="si-arrow">›</span></button>
       <button class="sheet-item search" onclick="sheetAction('search')"><span class="si-ic">🔍</span><span class="si-txt">Search<div class="si-sub">Find anything</div></span><span class="si-arrow">›</span></button>
+      <button class="sheet-item folders" onclick="sheetAction('folders')"><span class="si-ic">📁</span><span class="si-txt">Manage Folders<div class="si-sub">Add, edit, or remove</div></span><span class="si-arrow">›</span></button>
       <button class="sheet-item health" onclick="sheetAction('health')"><span class="si-ic">🩺</span><span class="si-txt">Health Dashboard<div class="si-sub">Card status & cleanup</div></span><span class="si-arrow">›</span></button>
       <button class="sheet-item dups" onclick="sheetAction('dups')"><span class="si-ic">🧹</span><span class="si-txt">Find Duplicates<div class="si-sub">Clean duplicates</div></span><span class="si-arrow">›</span></button>
       <button class="sheet-item stats" onclick="sheetAction('stats')"><span class="si-ic">📊</span><span class="si-txt">Statistics<div class="si-sub">View usage</div></span><span class="si-arrow">›</span></button>
@@ -1900,6 +1902,7 @@ const sheetAction=a=>{
     else if(a==="settings")openSettings();
     else if(a==="health")openHealth();
     else if(a==="dups")openDupScan();
+    else if(a==="folders")openFolderMgr();
   },200);
 };
 
