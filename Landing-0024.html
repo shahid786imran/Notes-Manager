@@ -353,6 +353,11 @@ body.night .ctx-sheet{background:linear-gradient(180deg,rgba(30,41,59,.95),rgba(
 .filter-chip.custom.on{background:linear-gradient(135deg,var(--p),var(--p2));color:#fff}
 .filter-chip .del{position:absolute;top:-4px;right:-4px;width:18px;height:18px;border-radius:50%;background:#ef4444;color:#fff;font-size:10px;display:flex;align-items:center;justify-content:center;border:1.5px solid #fff;font-weight:800;cursor:pointer;box-shadow:0 2px 6px rgba(239,68,68,.5)}
 .filter-chip .del:active{transform:scale(.85)}
+.sheet-header-row{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 8px;gap:10px}
+.sheet-close-x{background:var(--glass);border:1px solid var(--glass-bd);border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;color:var(--tx);font-size:15px;font-weight:800;cursor:pointer;padding:0;flex:none;font-family:inherit}
+.sheet-close-x:active{transform:scale(.9);background:rgba(239,68,68,.15);color:var(--dg)}
+.sheet-bottom-close{margin:6px 12px 16px;padding:12px;border-radius:12px;background:linear-gradient(135deg,var(--p),var(--p2));color:#fff;font-weight:800;font-size:13px;text-align:center;cursor:pointer;width:calc(100% - 24px);font-family:inherit;border:0;box-shadow:0 4px 12px rgba(99,102,241,.3)}
+.sheet-bottom-close:active{transform:scale(.97)}
 .sheet-divider{height:1px;background:var(--bd);margin:16px 16px 8px;border-radius:1px}
 .add-tag-btn{margin:10px 12px 20px;padding:11px;border-radius:12px;background:var(--glass);border:1.5px dashed var(--p);color:var(--p);font-weight:800;font-size:13px;text-align:center;cursor:pointer;transition:.2s;width:calc(100% - 24px);font-family:inherit}
 .add-tag-btn:hover{background:rgba(99,102,241,.1)}
@@ -729,7 +734,10 @@ body.night .fd input,body.night .fd textarea,body.night .fd select{background:rg
 <!-- ═══ FILTER SHEET ═══ -->
 <div class="sheet-ov" id="filterSheetOv" onclick="closeFilterSheet(event)">
   <div class="sheet" onclick="event.stopPropagation()">
-    <div class="sheet-title">🎯 Filter by Tag</div>
+    <div class="sheet-header-row">
+      <div class="sheet-title" style="padding:0">🎯 Filter by Tag</div>
+      <button class="sheet-close-x" onclick="closeFilterSheet()">✕</button>
+    </div>
     <div class="filter-grid" id="filterGrid"></div>
     <button class="add-tag-btn" onclick="openCustomTag()">+ Add Custom Tag</button>
 
@@ -738,6 +746,8 @@ body.night .fd input,body.night .fd textarea,body.night .fd select{background:rg
     <div class="sheet-title">📁 Filter by Folder</div>
     <div class="filter-grid" id="folderFilterGrid"></div>
     <button class="add-tag-btn" onclick="closeFilterSheet();openFolderMgr()">📁 Manage Folders</button>
+
+    <button class="sheet-bottom-close" onclick="closeFilterSheet()">Close</button>
   </div>
 </div>
 
@@ -3955,6 +3965,61 @@ setTimeout(()=>{
     hideLoadingScreen();
   }
 },8000);
+</script>
+   <script>
+// ═══════════════════════════════════════════════
+// FILTER SHEET — CLOSE BUTTONS + BACKDROP FIX
+// ═══════════════════════════════════════════════
+(function(){
+  function closeFilter(){
+    const ov=document.getElementById("filterSheetOv");
+    if(ov)ov.classList.remove("on");
+  }
+  
+  // Backdrop click (desktop)
+  document.addEventListener("click",function(e){
+    if(e.target&&e.target.id==="filterSheetOv")closeFilter();
+  });
+  
+  // Backdrop touch (mobile)
+  document.addEventListener("touchend",function(e){
+    if(e.target&&e.target.id==="filterSheetOv"){
+      e.preventDefault();
+      closeFilter();
+    }
+  },{passive:false});
+  
+  // Inject close button when filter sheet opens
+  const observer=new MutationObserver(function(){
+    const ov=document.getElementById("filterSheetOv");
+    if(!ov||!ov.classList.contains("on"))return;
+    const sheet=ov.querySelector(".sheet");
+    if(!sheet||sheet.querySelector(".injected-close"))return;
+    
+    // Add top-right X button
+    const title=sheet.querySelector(".sheet-title");
+    if(title&&!title.parentElement.querySelector(".sheet-close-x")){
+      const btn=document.createElement("button");
+      btn.className="sheet-close-x injected-close";
+      btn.textContent="✕";
+      btn.onclick=closeFilter;
+      btn.style.cssText="background:var(--glass);border:1px solid var(--glass-bd);border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;color:var(--tx);font-size:15px;font-weight:800;cursor:pointer;padding:0;flex:none;position:absolute;top:14px;right:16px;z-index:10";
+      sheet.style.position="relative";
+      sheet.appendChild(btn);
+    }
+    
+    // Add bottom close button
+    if(!sheet.querySelector(".injected-bottom-close")){
+      const bb=document.createElement("button");
+      bb.className="injected-bottom-close";
+      bb.textContent="Close";
+      bb.onclick=closeFilter;
+      bb.style.cssText="margin:6px 12px 16px;padding:12px;border-radius:12px;background:linear-gradient(135deg,var(--p),var(--p2));color:#fff;font-weight:800;font-size:13px;text-align:center;cursor:pointer;width:calc(100% - 24px);font-family:inherit;border:0;box-shadow:0 4px 12px rgba(99,102,241,.3);display:block";
+      sheet.appendChild(bb);
+    }
+  });
+  observer.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:["class"]});
+})();
 </script>
 </body>
 </html>
