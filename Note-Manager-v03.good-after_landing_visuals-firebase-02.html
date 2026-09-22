@@ -2198,38 +2198,81 @@ function editInlineLink(btn){const href=btn.getAttribute("data-href"),text=btn.g
 function removeInlineLink(btn){const href=btn.getAttribute("data-href");const el=document.getElementById("editContent");if(!el)return;el.querySelectorAll("a").forEach(a=>{if(a.href===href){const txt=document.createTextNode(a.textContent);a.parentNode.replaceChild(txt,a);}});markChanged();}
 
 const ColorPicker=(()=>{
-  const overlay=document.getElementById("cpOverlay");const grid=document.getElementById("cpGrid");const closeBtn=document.getElementById("cpClose");
-  const prevSw=document.getElementById("cpPreviewSwatch");const prevName=document.getElementById("cpPreviewName");const colorInp=document.getElementById("cpColorInput");const titleEl=document.getElementById("cpTitle");
+  function g(id){return document.getElementById(id);}
+  function buildGrid(){
+    const grid=g("cpGrid");if(!grid)return;
+    grid.innerHTML="";
+    COLOR_PICKER_PRESETS.forEach(function(preset){
+      const name=preset[0],hex=preset[1];
+      const btn=document.createElement("button");
+      btn.className="cp-swatch";
+      btn.style.background=hex;
+      btn.dataset.hex=hex.toUpperCase();
+      btn.setAttribute("aria-label",name);
+      btn.innerHTML='<span class="check">✓</span>';
+      btn.addEventListener("click",function(){selectColor(hex);});
+      grid.appendChild(btn);
+    });
+  }
+  function refreshUI(){
+    const prevSw=g("cpPreviewSwatch"),prevName=g("cpPreviewName"),colorInp=g("cpColorInput"),grid=g("cpGrid");
+    if(prevSw)prevSw.style.background=currentColor;
+    if(prevName)prevName.textContent=nameFor(currentColor);
+    if(colorInp)colorInp.value=currentColor;
+    if(grid)grid.querySelectorAll(".cp-swatch").forEach(function(b){b.classList.toggle("selected",b.dataset.hex===currentColor.toUpperCase());});
+  }
   let currentColor="#4C6EF5";let onChangeCb=null;let originalColor="#4C6EF5";let defaultColor="#64748B";
-  const normalize=(h)=>{if(!h||h==="null"||h==="")return null;h=String(h).trim();if(!h.startsWith("#"))h="#"+h;return /^#[0-9A-Fa-f]{6}$/.test(h)?h.toUpperCase():null;};
-  const nameFor=(h)=>(COLOR_PICKER_PRESETS.find(c=>c[1].toUpperCase()===h.toUpperCase())||["Custom"])[0];
-  function buildGrid(){grid.innerHTML="";COLOR_PICKER_PRESETS.forEach(([name,hex])=>{const btn=document.createElement("button");btn.className="cp-swatch";btn.style.background=hex;btn.dataset.hex=hex.toUpperCase();btn.setAttribute("aria-label",name);btn.innerHTML='<span class="check">✓</span>';btn.addEventListener("click",()=>selectColor(hex));grid.appendChild(btn);});}
-  function refreshUI(){prevSw.style.background=currentColor;prevName.textContent=nameFor(currentColor);colorInp.value=currentColor;grid.querySelectorAll(".cp-swatch").forEach(b=>b.classList.toggle("selected",b.dataset.hex===currentColor.toUpperCase()));}
+  function normalize(h){if(!h||h==="null"||h==="")return null;h=String(h).trim();if(!h.startsWith("#"))h="#"+h;return /^#[0-9A-Fa-f]{6}$/.test(h)?h.toUpperCase():null;}
+  function nameFor(h){const f=COLOR_PICKER_PRESETS.find(function(c){return c[1].toUpperCase()===h.toUpperCase();});return f?f[0]:"Custom";}
   function selectColor(hex){const n=normalize(hex);if(!n)return;currentColor=n;refreshUI();if(onChangeCb)onChangeCb(currentColor);setTimeout(close,80);}
   function ensureActions(){
+    const overlay=g("cpOverlay");if(!overlay)return;
     let actions=document.getElementById("cpActions");
     if(actions)return;
+    const cw=overlay.querySelector(".cp-window");
+    if(!cw)return;
     actions=document.createElement("div");
     actions.id="cpActions";actions.className="cp-actions";
     actions.innerHTML='<button class="cp-action-btn" id="cpRevert" type="button">↺ Revert</button><button class="cp-action-btn" id="cpDefault" type="button">⬜ Default</button>';
-    overlay.querySelector(".cp-window").appendChild(actions);
-    document.getElementById("cpRevert").onclick=()=>{currentColor=originalColor;refreshUI();if(onChangeCb)onChangeCb(currentColor);};
-    document.getElementById("cpDefault").onclick=()=>{currentColor=defaultColor;refreshUI();if(onChangeCb)onChangeCb(currentColor);};
+    cw.appendChild(actions);
+    const rev=document.getElementById("cpRevert");
+    const def=document.getElementById("cpDefault");
+    if(rev)rev.onclick=function(){currentColor=originalColor;refreshUI();if(onChangeCb)onChangeCb(currentColor);};
+    if(def)def.onclick=function(){currentColor=defaultColor;refreshUI();if(onChangeCb)onChangeCb(currentColor);};
   }
-  function open(opts={}){
+  function open(opts){
+    opts=opts||{};
     currentColor=normalize(opts.color)||"#4C6EF5";
     originalColor=currentColor;
     const def=opts.defaultColor;
     defaultColor=(def===null||def===undefined)?currentColor:(normalize(def)||"#64748B");
     onChangeCb=typeof opts.onChange==="function"?opts.onChange:null;
-    if(opts.title)titleEl.textContent=opts.title;else titleEl.textContent="Choose a colour";
+    const titleEl=g("cpTitle");
+    if(titleEl){if(opts.title)titleEl.textContent=opts.title;else titleEl.textContent="Choose a colour";}
     buildGrid();refreshUI();ensureActions();
-    overlay.classList.add("open");
+    const overlay=g("cpOverlay");
+    if(overlay)overlay.classList.add("open");
   }
-  function close(){overlay.classList.remove("open");setTimeout(()=>{try{restoreEditSelection();}catch(e){}triggerSaveOnPopupClose();},50);}
-  closeBtn.addEventListener("click",close);overlay.addEventListener("click",(e)=>{if(e.target===overlay)close();});
-  colorInp.addEventListener("input",(e)=>selectColor(e.target.value));
-  return{open,close};
+  function close(){
+    const overlay=g("cpOverlay");
+    if(overlay)overlay.classList.remove("open");
+    setTimeout(function(){try{restoreEditSelection();}catch(e){}triggerSaveOnPopupClose();},50);
+  }
+  // Attach listeners safely (run once DOM is ready)
+  function attachListeners(){
+    const closeBtn=g("cpClose");
+    const overlay=g("cpOverlay");
+    const colorInp=g("cpColorInput");
+    if(closeBtn)closeBtn.addEventListener("click",close);
+    if(overlay)overlay.addEventListener("click",function(e){if(e.target===overlay)close();});
+    if(colorInp)colorInp.addEventListener("input",function(e){selectColor(e.target.value);});
+  }
+  if(document.readyState==="loading"){
+    document.addEventListener("DOMContentLoaded",attachListeners);
+  }else{
+    attachListeners();
+  }
+  return{open:open,close:close};
 })();
 
 function openColorPickerForNote(noteId){
