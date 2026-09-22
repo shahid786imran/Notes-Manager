@@ -5174,5 +5174,272 @@ setTimeout(()=>{
   }
 })();
 </script>
+<!-- ═══ CARD COLOR — Standalone Floating Button + Modal ═══ -->
+<button id="paintFab" style="position:fixed;top:12px;left:12px;z-index:9998;width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border:0;font-size:18px;cursor:pointer;box-shadow:0 4px 16px rgba(99,102,241,.5);display:flex;align-items:center;justify-content:center;padding:0">🎨</button>
+
+<div id="cpmModal" style="position:fixed;inset:0;background:rgba(15,23,42,.6);backdrop-filter:blur(10px);z-index:99999;display:none;align-items:flex-end;justify-content:center">
+  <div style="width:100%;max-width:520px;background:#fff;border-radius:24px 24px 0 0;max-height:85vh;overflow-y:auto;padding:20px 20px 100px;color:#1e1b4b;font-family:inherit">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div>
+        <div style="font-size:18px;font-weight:800">🎨 Card Appearance</div>
+        <div style="font-size:11px;color:#64748b;margin-top:2px">Color & Transparency</div>
+      </div>
+      <button onclick="cpmClose()" style="width:36px;height:36px;border-radius:50%;background:#f1f5f9;border:0;font-size:16px;font-weight:800;cursor:pointer;color:#1e1b4b">✕</button>
+    </div>
+
+    <div style="margin-bottom:20px">
+      <div style="font-size:12px;font-weight:800;color:#6366f1;text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px">Background Color</div>
+      <div id="cpmGrid" style="display:grid;grid-template-columns:repeat(8,1fr);gap:8px"></div>
+    </div>
+
+    <div style="margin-bottom:20px">
+      <div style="font-size:12px;font-weight:800;color:#6366f1;text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px">Transparency <span id="cpmOpacityVal" style="color:#1e1b4b;text-transform:none;font-size:14px;font-weight:800">70%</span></div>
+      <input type="range" min="10" max="100" value="70" id="cpmOpacitySlider" style="width:100%;height:6px;-webkit-appearance:none;border-radius:3px;background:#e2e8f0;outline:none">
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:#94a3b8;font-weight:600;margin-top:6px">
+        <span>Transparent</span><span>Solid</span>
+      </div>
+    </div>
+
+    <div style="margin-bottom:20px">
+      <div style="font-size:12px;font-weight:800;color:#6366f1;text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px">Preview</div>
+      <div id="cpmPreview" style="padding:16px;border-radius:14px;border:1px solid #e0e7ff;background:#fff;transition:.3s">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:22px">📝</span>
+          <div style="flex:1">
+            <div style="font-weight:800;font-size:14px">Sample Card</div>
+            <div style="font-size:11px;color:#64748b;margin-top:2px">Live preview</div>
+          </div>
+          <span style="color:#64748b;font-size:12px">▶</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-bottom:20px">
+      <div style="font-size:12px;font-weight:800;color:#6366f1;text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px">Quick Presets</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <button onclick="cpmPreset('default')" style="padding:12px;border-radius:12px;background:#f1f5f9;border:0;font-weight:700;font-size:12px;cursor:pointer;color:#1e1b4b;font-family:inherit">Default</button>
+        <button onclick="cpmPreset('dark')" style="padding:12px;border-radius:12px;background:#1e293b;border:0;font-weight:700;font-size:12px;cursor:pointer;color:#fff;font-family:inherit">Dark</button>
+        <button onclick="cpmPreset('light')" style="padding:12px;border-radius:12px;background:#fff;border:2px solid #e2e8f0;font-weight:700;font-size:12px;cursor:pointer;color:#1e1b4b;font-family:inherit">Light</button>
+        <button onclick="cpmPreset('glass')" style="padding:12px;border-radius:12px;background:linear-gradient(135deg,#e0e7ff,#fce7f3);border:0;font-weight:700;font-size:12px;cursor:pointer;color:#1e1b4b;font-family:inherit">Glass</button>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px">
+      <button onclick="cpmReset()" style="flex:1;padding:14px;border-radius:12px;background:#f1f5f9;border:0;font-weight:700;font-size:13px;cursor:pointer;color:#1e1b4b;font-family:inherit">↺ Reset</button>
+      <button onclick="cpmClose()" style="flex:2;padding:14px;border-radius:12px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border:0;font-weight:700;font-size:13px;cursor:pointer;color:#fff;font-family:inherit;box-shadow:0 4px 12px rgba(99,102,241,.4)">✓ Done</button>
+    </div>
+  </div>
+</div>
+
+<style>
+.cpm-swatch{
+  aspect-ratio:1;border-radius:12px;cursor:pointer;
+  border:3px solid transparent;transition:.15s;
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;color:#fff;font-weight:800;
+  box-shadow:0 2px 6px rgba(0,0,0,.12);
+}
+.cpm-swatch:hover{transform:scale(1.1)}
+.cpm-swatch.on{border-color:#6366f1;box-shadow:0 0 0 3px rgba(99,102,241,.3)}
+.cpm-swatch.reset-swatch{background:#f1f5f9!important;color:#64748b;border:2px dashed #cbd5e1}
+.cpm-swatch.reset-swatch.on{border-style:solid;border-color:#6366f1}
+#cpmOpacitySlider::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#8b5cf6);cursor:pointer;box-shadow:0 3px 10px rgba(99,102,241,.5)}
+#cpmOpacitySlider::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#8b5cf6);cursor:pointer;border:0}
+body.night #cpmModal>div{background:#1e293b!important;color:#f1f5f9!important}
+body.night #cpmModal>div>div>div{color:#f1f5f9!important}
+body.night #cpmPreview{background:#0f172a!important;border-color:rgba(255,255,255,.1)!important}
+body.night #cpmPreview>div>div{color:#f1f5f9!important}
+body.night #cpmOpacitySlider{background:rgba(255,255,255,.1)!important}
+body.night #cpmModal button[onclick*="cpmClose"]:first-child{background:#334155!important;color:#f1f5f9!important}
+body.night #cpmModal button[onclick*="cpmReset"]{background:#334155!important;color:#f1f5f9!important}
+</style>
+
+<script>
+// ═══════════════════════════════════════════════
+// CARD COLOR PICKER — Standalone 100% Working
+// ═══════════════════════════════════════════════
+(function(){
+  const COLORS=[
+    {id:"",bg:"",label:"Default"},
+    {id:"white",bg:"255,255,255"},
+    {id:"slate",bg:"100,116,139"},
+    {id:"red",bg:"239,68,68"},
+    {id:"orange",bg:"249,115,22"},
+    {id:"amber",bg:"245,158,11"},
+    {id:"yellow",bg:"234,179,8"},
+    {id:"lime",bg:"132,204,22"},
+    {id:"green",bg:"16,185,129"},
+    {id:"teal",bg:"20,184,166"},
+    {id:"cyan",bg:"6,182,212"},
+    {id:"blue",bg:"59,130,246"},
+    {id:"indigo",bg:"99,102,241"},
+    {id:"purple",bg:"139,92,246"},
+    {id:"pink",bg:"236,72,153"},
+    {id:"rose",bg:"244,63,94"}
+  ];
+
+  let color=localStorage.getItem("nm_cardBgColor")||"";
+  let opacity=parseInt(localStorage.getItem("nm_cardBgOpacity"))||70;
+
+  // ─── APPLY TO CARDS ───
+  function apply(){
+    const body=document.body;
+    if(!body)return;
+    if(!color){
+      body.style.removeProperty("--card-bg");
+      body.style.removeProperty("--card-bd");
+    }else{
+      const pal=COLORS.find(c=>c.id===color);
+      if(!pal||!pal.bg){
+        body.style.removeProperty("--card-bg");
+        body.style.removeProperty("--card-bd");
+      }else{
+        const isNight=body.classList.contains("night");
+        const a=opacity/100;
+        const alpha=isNight?Math.max(a,0.25):a;
+        body.style.setProperty("--card-bg",`rgba(${pal.bg},${alpha.toFixed(2)})`);
+        body.style.setProperty("--card-bd",`rgba(${pal.bg},${Math.min(1,alpha+0.15).toFixed(2)})`);
+      }
+    }
+    updatePreview();
+  }
+
+  // ─── UPDATE PREVIEW ───
+  function updatePreview(){
+    const pv=document.getElementById("cpmPreview");
+    if(!pv)return;
+    const pal=COLORS.find(c=>c.id===color);
+    const isNight=document.body.classList.contains("night");
+    if(!pal||!pal.bg){
+      pv.style.background=isNight?"#0f172a":"#fff";
+      pv.style.borderColor=isNight?"rgba(255,255,255,.1)":"#e0e7ff";
+    }else{
+      const a=opacity/100;
+      const alpha=isNight?Math.max(a,0.25):a;
+      const bgStr=`rgba(${pal.bg},${alpha.toFixed(2)})`;
+      pv.style.background=`linear-gradient(${isNight?'#0f172a':'#fff'},${isNight?'#0f172a':'#fff'}), ${bgStr}`;
+      pv.style.backgroundBlendMode="normal";
+      pv.style.backgroundColor=bgStr;
+      pv.style.borderColor=`rgba(${pal.bg},${Math.min(1,alpha+0.15).toFixed(2)})`;
+    }
+  }
+
+  // ─── BUILD GRID ───
+  function buildGrid(){
+    const grid=document.getElementById("cpmGrid");
+    if(!grid)return;
+    grid.innerHTML=COLORS.map(c=>{
+      const on=color===c.id?"on":"";
+      if(!c.bg){
+        return `<div class="cpm-swatch reset-swatch ${on}" data-color="" title="Default">✕</div>`;
+      }
+      return `<div class="cpm-swatch ${on}" data-color="${c.id}" style="background:rgb(${c.bg})" title="${c.id}"></div>`;
+    }).join("");
+    // Bind clicks
+    grid.querySelectorAll(".cpm-swatch").forEach(el=>{
+      el.addEventListener("click",()=>{
+        setColor(el.getAttribute("data-color"));
+      });
+    });
+  }
+
+  // ─── SET COLOR ───
+  function setColor(id){
+    color=id||"";
+    localStorage.setItem("nm_cardBgColor",color);
+    apply();
+    buildGrid();
+  }
+
+  // ─── SET OPACITY ───
+  function setOpacity(v){
+    opacity=parseInt(v);
+    localStorage.setItem("nm_cardBgOpacity",opacity);
+    const el=document.getElementById("cpmOpacityVal");
+    if(el)el.textContent=opacity+"%";
+    apply();
+  }
+
+  // ─── PUBLIC FUNCTIONS ───
+  window.cpmClose=function(){
+    const m=document.getElementById("cpmModal");
+    if(m)m.style.display="none";
+  };
+
+  window.cpmReset=function(){
+    color="";opacity=70;
+    localStorage.removeItem("nm_cardBgColor");
+    localStorage.setItem("nm_cardBgOpacity",70);
+    apply();buildGrid();
+    const s=document.getElementById("cpmOpacitySlider");
+    if(s)s.value=70;
+    const v=document.getElementById("cpmOpacityVal");
+    if(v)v.textContent="70%";
+  };
+
+  window.cpmPreset=function(type){
+    if(type==="default"){color="";opacity=70}
+    else if(type==="dark"){color="slate";opacity=90}
+    else if(type==="light"){color="white";opacity=95}
+    else if(type==="glass"){color="white";opacity=35}
+    localStorage.setItem("nm_cardBgColor",color);
+    localStorage.setItem("nm_cardBgOpacity",opacity);
+    apply();buildGrid();
+    const s=document.getElementById("cpmOpacitySlider");
+    if(s)s.value=opacity;
+    const v=document.getElementById("cpmOpacityVal");
+    if(v)v.textContent=opacity+"%";
+  };
+
+  window.cpmOpen=function(){
+    buildGrid();
+    const s=document.getElementById("cpmOpacitySlider");
+    if(s)s.value=opacity;
+    const v=document.getElementById("cpmOpacityVal");
+    if(v)v.textContent=opacity+"%";
+    updatePreview();
+    const m=document.getElementById("cpmModal");
+    if(m)m.style.display="flex";
+  };
+
+  // ─── BIND EVENTS ───
+  function bind(){
+    // Paint button
+    const btn=document.getElementById("paintFab");
+    if(btn)btn.addEventListener("click",window.cpmOpen);
+
+    // Opacity slider
+    const slider=document.getElementById("cpmOpacitySlider");
+    if(slider)slider.addEventListener("input",function(){setOpacity(this.value)});
+
+    // Backdrop click
+    const modal=document.getElementById("cpmModal");
+    if(modal)modal.addEventListener("click",function(e){
+      if(e.target===modal)window.cpmClose();
+    });
+
+    // Initial build
+    buildGrid();
+    apply();
+  }
+
+  // ─── INIT ───
+  if(document.readyState==="loading"){
+    document.addEventListener("DOMContentLoaded",bind);
+  }else{
+    bind();
+  }
+
+  // Re-apply on theme change
+  document.addEventListener("DOMContentLoaded",function(){
+    const obs=new MutationObserver(()=>apply());
+    if(document.body)obs.observe(document.body,{attributes:true,attributeFilter:["class"]});
+  });
+  if(document.body){
+    const obs=new MutationObserver(()=>apply());
+    obs.observe(document.body,{attributes:true,attributeFilter:["class"]});
+  }
+})();
+</script>
 </body>
 </html>
