@@ -4021,5 +4021,46 @@ setTimeout(()=>{
   observer.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:["class"]});
 })();
 </script>
+   <style>
+/* Filter sheet ke close buttons hide */
+#filterSheetOv .sheet-close-x,
+#filterSheetOv .injected-close,
+#filterSheetOv .injected-bottom-close,
+#filterSheetOv .sheet-bottom-close{
+  display:none!important;
+}
+
+/* Filter grid ka gap kam karo */
+#filterSheetOv .filter-grid{
+  gap:6px!important;
+  padding:4px 12px 10px!important;
+}
+
+/* Add tag button ka margin kam */
+#filterSheetOv .add-tag-btn{
+  margin:6px 12px 10px!important;
+  padding:9px!important;
+}
+
+/* Divider ka margin kam */
+#filterSheetOv .sheet-divider{
+  margin:10px 16px 4px!important;
+}
+
+/* Sheet title ka padding kam */
+#filterSheetOv .sheet-title{
+  padding:12px 20px 4px!important;
+  font-size:10.5px!important;
+}
+</style>
+   <style>
+/* Filter sheet ke close buttons hide */
+#filterSheetOv .sheet-close-x,
+#filterSheetOv .injected-close,
+#filterSheetOv .injected-bottom-close,
+#filterSheetOv .sheet-bottom-close{
+  display:none!important;
+}
+</style>
 </body>
 </html>
